@@ -1,4 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jagdish Organics - Operations Gateway</title>
+  
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2312432a'/%3E%3Ccircle cx='50' cy='35' r='12' fill='%23e69a0b'/%3E%3Cpath d='M30 65 Q50 45 50 65 Q50 45 70 65' stroke='%23e69a0b' stroke-width='4' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    :root {
+      --brand-green: #12432a;
+      --brand-green-light: #1b5e3b;
+      --brand-gold: #e69a0b;
+      --brand-cream: #f4f6f0;
+      --surface: #ffffff;
+      --text-dark: #202b24;
+      --border: #d4ded7;
+      --critical: #c0392b;
+      --success: #27ae60;
+      --warning: #d35400;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    body { background: var(--brand-cream); color: var(--text-dark); padding-bottom: 50px; }
+    
+    header {
+      background: var(--brand-green);
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid var(--brand-gold);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+    .brand-container { display: flex; align-items: center; gap: 14px; }
+    .brand-logo-svg { width: 44px; height: 44px; flex-shrink: 0; }
+    .brand-title h1 { font-size: 1.25rem; font-weight: 800; color: #ffffff; }
+    .brand-title p { font-size: 0.72rem; color: var(--brand-gold); font-weight: 600; text-transform: uppercase; }
+    .header-badges { display: flex; align-items: center; gap: 10px; }
+    .badge { background: var(--brand-green-light); border: 1px solid var(--brand-gold); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; }
+    
+    .nav-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; overflow-x: auto; }
+    .nav-tab { padding: 14px 20px; font-size: 0.88rem; font-weight: 600; color: #555; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+    .nav-tab:hover { color: var(--brand-green); }
+    .nav-tab.active { color: var(--brand-green); border-bottom-color: var(--brand-green); font-weight: 700; }
+
+    .container { max-width: 1400px; margin: 20px auto; padding: 0 16px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 20px; }
+    .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; color: var(--brand-green); display: flex; justify-content: space-between; align-items: center; }
+
+    #map { height: 530px; width: 100%; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; }
+    .map-controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .map-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 0.78rem; background: #fafcfa; padding: 12px; border-radius: 6px; border: 1px solid var(--border); }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .legend-item:hover { background: #eef2ed; }
+    .legend-color { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { background: #eef3ef; padding: 10px 12px; font-weight: 600; color: #333; border-bottom: 2px solid var(--border); text-align: left; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tr:hover { background: #f9fbf9; }
+    .cpm-badge { background: var(--critical); color: white; font-size: 0.68rem; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
+    .status-tag { padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+    .status-done { background: #e8f8f0; color: var(--success); }
+    .status-prog { background: #fef5e7; color: var(--warning); }
+
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #333; }
+    input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand-green); }
+    .btn { background: var(--brand-green); color: white; border: none; padding: 9px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; text-decoration: none; }
+    .btn:hover { background: var(--brand-green-light); }
+    .btn-gold { background: var(--brand-gold); color: #fff; }
+    .btn-gold:hover { background: #cc8400; }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .metric-card { background: #fbfdfa; border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+    .metric-val { font-size: 1.25rem; font-weight: 700; color: var(--brand-green); margin-top: 4px; }
+    .metric-lbl { font-size: 0.72rem; color: #666; text-transform: uppercase; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand-container">
+    <svg class="brand-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="18" fill="#ffffff" />
+      <circle cx="50" cy="26" r="10" fill="#e69a0b" />
+      <line x1="50" y1="10" x2="50" y2="14" stroke="#e69a0b" stroke-width="3" stroke-linecap="round"/>
+      <line x1="50" y1="38" x2="50" y2="42" stroke="#e69a0b" stroke-width="3" stroke-linecap="round"/>
+      <line x1="34" y1="26" x2="38" y2="26" stroke="#e69a0b" stroke-width="3" stroke-linecap="round"/>
+      <line x1="62" y1="26" x2="66" y2="26" stroke="#e69a0b" stroke-width="3" stroke-linecap="round"/>
+      <line x1="20" y1="58" x2="80" y2="58" stroke="#e69a0b" stroke-width="4" stroke-linecap="round"/>
+      <path d="M50 58 V42 C45 42 42 46 42 50 C42 55 48 58 50 58 Z" fill="#e69a0b"/>
+      <path d="M50 58 V42 C55 42 58 46 58 50 C58 55 52 58 50 58 Z" fill="#e69a0b"/>
+      <path d="M33 58 V46 C29 46 26 49 26 52 C26 56 31 58 33 58 Z" fill="#e69a0b"/>
+      <path d="M33 58 V46 C37 46 40 49 40 52 C40 56 35 58 33 58 Z" fill="#e69a0b"/>
+      <path d="M67 58 V46 C63 46 60 49 60 52 C60 56 65 58 67 58 Z" fill="#e69a0b"/>
+      <path d="M67 58 V46 C71 46 74 49 74 52 C74 56 69 58 67 58 Z" fill="#e69a0b"/>
+      <text x="50" y="78" text-anchor="middle" font-size="15" font-weight="900" fill="#12432a">JAGDISH</text>
+      <text x="50" y="91" text-anchor="middle" font-size="11" font-weight="800" fill="#12432a">ORGANICS</text>
+    </svg>
+    
+    <div class="brand-title">
+      <h1>Jagdish Organics Operations Gateway</h1>
+      <p>Green By Nature • Cadastral KML Engine • Khairabad, Rupnagar</p>
+    </div>
+  </div>
+
+  <div class="header-badges">
+    <span class="badge">Lead: Devinder Singh (+91 9818526930)</span>
+    <span class="badge" style="background: var(--brand-gold); color:#12432a; font-weight:800;">NFC Automated</span>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" id="btn-tab-gis" onclick="switchTab('tab-gis')">GIS Cadastral Map (KML)</div>
+  <div class="nav-tab" id="btn-tab-schedule" onclick="switchTab('tab-schedule')">Critical Path Task Engine</div>
+  <div class="nav-tab" id="btn-tab-entry" onclick="switchTab('tab-entry')">Log Operation & Upload File</div>
+  <div class="nav-tab" id="btn-tab-finance" onclick="switchTab('tab-finance')">Financial & Resource Ledger</div>
+</div>
+
+<div class="container">
+
+  <!-- TAB 1: GIS CADASTRAL MAP -->
+  <div id="tab-gis" class="tab-content active">
+    <div class="card">
+      <div class="map-controls-row">
+        <div class="card-title" style="margin-bottom:0;">
+          <span>Ground Truth Survey Matrix (Direct KML Extraction) - Click Any Plot to Filter & Log</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-gold" style="padding: 5px 12px; font-size: 0.75rem;" onclick="resetFilterAndShowAll()">
+            Show All Farms Tasks
+          </button>
+          <button class="btn" style="padding: 5px 12px; font-size: 0.75rem;" onclick="resetMapView()">
+            Center All Plots
+          </button>
+        </div>
+      </div>
+      
+      <div id="map"></div>
+      
+      <div class="map-legend">
+        <div class="legend-item" onclick="triggerPlotAction('VegPlot-01 (Carrots)', 'Farm-1')"><div class="legend-color" style="background: #e67e22;"></div> VegPlot-01: Desi Carrot (0.16 Ac)</div>
+        <div class="legend-item" onclick="triggerPlotAction('VegPlot-03 (Early Potato)', 'Farm-1')"><div class="legend-color" style="background: #27ae60;"></div> VegPlot-03: Early Potato (0.14 Ac)</div>
+        <div class="legend-item" onclick="triggerPlotAction('VegPlot-05 (Cole Crops)', 'Farm-1')"><div class="legend-color" style="background: #f39c12;"></div> VegPlot-05/06: Cane/Ginger/Peanut</div>
+        <div class="legend-item" onclick="triggerPlotAction('VegPlot-08 (Turmeric/Cane)', 'Farm-1')"><div class="legend-color" style="background: #16a085;"></div> VegPlot-08: Turmeric Stand (0.45 Ac)</div>
+        <div class="legend-item" onclick="triggerPlotAction('Wheat/VegPlot-09 (1-Ac Cereal)', 'Farm-1')"><div class="legend-color" style="background: #2ecc71;"></div> VegPlot-09: 1-Ac Wheat+Chana BBF</div>
+        <div class="legend-item" onclick="triggerPlotAction('VegPlot-10 (Broccoli)', 'Farm-1')"><div class="legend-color" style="background: #3498db;"></div> VegPlot-10: Broccoli & Knol Khol</div>
+        <div class="legend-item" onclick="triggerPlotAction('VegPlot-11 (Garlic/Peas)', 'Farm-1')"><div class="legend-color" style="background: #9b59b6;"></div> VegPlot-11: Garlic in Poplar Alleys</div>
+        <div class="legend-item" onclick="triggerPlotAction('VegPlot-13 (Driveway & Wings)', 'Farm-1')"><div class="legend-color" style="background: #7f8c8d;"></div> VegPlot-13: Central Sod Driveway</div>
+        <div class="legend-item" onclick="triggerPlotAction('Alley 1 (White Radish)', 'Farm-4')"><div class="legend-color" style="background: #d35400;"></div> Farm-2, 3 & 4 Outlying Parcels</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: CRITICAL PATH TASK ENGINE -->
+  <div id="tab-schedule" class="tab-content">
+    <div class="card">
+      <div class="card-title">
+        <span id="schedule-title-text">Critical Path Execution Matrix (Synced to Google Sheet)</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn" style="padding:4px 10px; font-size:0.75rem;" onclick="resetFilterAndShowAll()">Clear Filter</button>
+          <span class="badge" style="background: var(--critical);">Red = Critical Path</span>
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Task Code</th>
+              <th>Parcel Target</th>
+              <th>Agronomic Description</th>
+              <th>Schedule Window</th>
+              <th>CPM Track</th>
+              <th>Lead Assignee</th>
+              <th>Action / State</th>
+            </tr>
+          </thead>
+          <tbody id="task-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: LOG OPERATION & DIGITAL VAULT UPLOAD -->
+  <div id="tab-entry" class="tab-content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log Field Operation & Expenditure</div>
+        <form id="entry-form" onsubmit="handleFormSubmit(event)">
+          <div class="form-group">
+            <label>Farm Holding Unit</label>
+            <select id="form-farm" required onchange="populatePlotDropdown()">
+              <option value="Farm-1">Farm-1: Jagdish Organics Core (2.949 Ac)</option>
+              <option value="Farm-2">Farm-2: Courtyard Enclave (0.096 Ac)</option>
+              <option value="Farm-3">Farm-3: Walled Spice Garden (0.034 Ac)</option>
+              <option value="Farm-4">Farm-4: Commercial Alley Corridor (0.250 Ac)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Sub-Plot / Bed Zone Target</label>
+            <select id="form-plot" required></select>
+          </div>
+
+          <div class="form-group">
+            <label>Task Reference Code</label>
+            <select id="form-task">
+              <option value="T-01">T-01: Non-Inversion Aeration & Gypsum Dressing</option>
+              <option value="T-02">T-02: Trench 14ft Conduit Sleeve across VegPlot-13</option>
+              <option value="T-03">T-03: Shape 7 Permanent 300' Beds in Farm-4 Alleys</option>
+              <option value="T-04">T-04: Automated Jeevamrut System Batch Extraction</option>
+              <option value="T-05">T-05: Pressure Test Drip Networks (1.5 Bar)</option>
+              <option value="T-06">T-06: Mass Seed Priming (Beejamrit + Sanjeevni)</option>
+              <option value="T-07">T-07: Direct-Sow Carrots (PC-161) & Radish</option>
+              <option value="T-08">T-08: Plant Seed Potatoes (Kufri Pukhraj) on Ridges</option>
+              <option value="T-09">T-09: Cover Potato Ridges with 3-4" Straw Blanket</option>
+              <option value="T-10">T-10: Rauni Pre-Soak on 1-Ac Cereal Bay (Plot-09)</option>
+              <option value="T-11">T-11: BBF Drill Sowing: 4:1 Wheat + Chana</option>
+              <option value="T-12">T-12: Harvest Groundnut; Transplant Cauliflower</option>
+              <option value="T-13">T-13: Harvest Mature Turmeric/Ginger; Curing</option>
+              <option value="T-14">T-14: Rabi Onion Transplanting & Successions</option>
+            </select>
+          </div>
+
+          <div class="card" style="background: #fbfdfa; border: 1px solid #d0e0cb; padding: 12px; margin-bottom: 14px;">
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Labor Skill Category</label>
+                <select id="wage-category" onchange="calcDynamicLabor()">
+                  <option value="Standard Field Labor" data-rate="450">Standard Field Labor (₹450/day)</option>
+                  <option value="Skilled Machinery Operator" data-rate="750">Skilled Machinery Operator (₹750/day)</option>
+                  <option value="Tubewell & Irrigation Tech" data-rate="600">Tubewell & Irrigation Tech (₹600/day)</option>
+                  <option value="Master Pruner / Tree Lead" data-rate="650">Master Pruner / Tree Lead (₹650/day)</option>
+                  <option value="Supervisor / Field Lead" data-rate="900">Supervisor / Field Lead (₹900/day)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Worker Headcount</label>
+                <input type="number" id="worker-count" placeholder="0" min="0" value="0" oninput="calcDynamicLabor()">
+              </div>
+            </div>
+            <div style="font-size: 0.8rem; font-weight: bold; color: var(--brand-green);">
+              Computed Labor Payout: <span id="computed-labor-text">₹0.00</span>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Input Materials Cost (₹)</label>
+              <input type="number" id="cost-inputs" placeholder="0.00" min="0" step="any" oninput="recalcTotal()">
+            </div>
+            <div class="form-group">
+              <label>Machinery / Diesel Hire (₹)</label>
+              <input type="number" id="cost-machinery" placeholder="0.00" min="0" step="any" oninput="recalcTotal()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Utilities / Power Units (₹)</label>
+            <input type="number" id="cost-utilities" placeholder="0.00" min="0" step="any" oninput="recalcTotal()">
+          </div>
+
+          <div class="form-group">
+            <label>Reporting Stakeholder</label>
+            <select id="form-stakeholder">
+              <option value="Devinder Singh (Owner)">Devinder Singh (Owner - 9818526930)</option>
+              <option value="Crew Alpha Lead">Crew Alpha Lead (Tillage & Bed Profiling)</option>
+              <option value="Crew Beta Lead">Crew Beta Lead (Biology & Planting)</option>
+              <option value="Irrigation Operator">Irrigation Operator (Tubewell & Manifolds)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Field Notes / Bio-Batch Observations</label>
+            <textarea id="form-notes" rows="2" placeholder="Record Jeevamrit age, soil vattar condition, sowing counts..."></textarea>
+          </div>
+
+          <div class="card" style="background: #fdfdfd; padding: 12px; border-style: dashed;">
+            <label>Upload Field Photo / Bill / Lab Report</label>
+            <input type="file" id="form-file" accept="image/*,.pdf">
+          </div>
+
+          <button type="submit" class="btn" style="width: 100%; justify-content: center;">
+            Submit Log Entry & Sync to Database
+          </button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Real-Time Transaction Costing</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-lbl">Total Transaction Cost</div>
+            <div class="metric-val" id="preview-total">₹0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-lbl">Database State</div>
+            <div class="metric-val" style="font-size: 1rem;" id="preview-status">Ready</div>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: #555; line-height: 1.6;">
+          <strong>Direct Integration:</strong> Form entries are dispatched to your Google Apps Script endpoint. Labor costs are calculated against the <code>Labor_Wage_Matrix</code> tab, files are stored in Google Drive under <code>Jagdish_Organics_Vault</code>, and critical path milestones are updated in <code>Task_Schedule</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: FINANCIAL AUDIT TRAIL -->
+  <div id="tab-finance" class="tab-content">
+    <div class="card">
+      <div class="card-title">Live Spreadsheet Database</div>
+      <p style="font-size: 0.85rem; color: #444; margin-bottom: 14px;">
+        All logged transactions, uploaded invoice URLs, labor summaries, and task states are tracked in your master Google Sheet:
+      </p>
+      <a href="https://docs.google.com/spreadsheets/d/1aTvNfJrd3K9J1Mjdk_zOTu076lpwPGqJrL_CGLNYzNU/edit" target="_blank" class="btn">
+        Open Master Google Sheet
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Leaflet GIS JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHR-e3lFWhiUSbs6DqLmq_8kci2lsd45osV8c4pQP8sczCTHo771Z6AfUZurXgJJ8y/exec";
   const USER_PHONE = "9818526930";
@@ -8,147 +343,373 @@
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    event.target.classList.add('active');
+    const btnTab = document.getElementById('btn-' + tabId);
+    if (btnTab) btnTab.classList.add('active');
     if (tabId === 'tab-gis') { setTimeout(() => { map.invalidateSize(); }, 200); }
   }
 
   // =========================================================================
-  // GIS ENGINE: Real Ground Polygons for Village Khairabad (Bela Road)
-  // Center: ~30.9815° N, 76.5465° E
+  // GIS ENGINE: Exact Survey Coordinates from KML (2026Rabi_VegPlot-01)
+  // Centered precisely on: Lat 30.9496°, Lon 76.5038°
   // =========================================================================
-  const map = L.map('map').setView([30.9818, 76.5462], 17);
+  const map = L.map('map').setView([30.9498, 76.5058], 18);
 
   L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-    maxZoom: 20,
+    maxZoom: 21,
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-    attribution: 'Satellite Imagery &copy; Google / Jagdish Organics'
+    attribution: 'Survey Data &copy; Jagdish Organics Google Earth Pro / KML Cadaster'
   }).addTo(map);
 
   let geojsonLayerGroup = L.layerGroup().addTo(map);
 
-  // Exact Village Khairabad Farm Boundaries
-  const khairabadParcels = [
+  // Direct conversion of KML Polygons into Styled GeoJSON Features
+  const kmlSurveyParcels = [
     {
       "type": "Feature",
       "properties": {
-        "name": "Farm-1: Jagdish Organics Core Holding",
-        "area": "2.949 Acres",
-        "details": "1-Ac Wheat/Chickpea BBF, Poplar Alleys, Turmeric, Central Roadway",
-        "color": "#27ae60"
+        "plotKey": "VegPlot-01 (Carrots)",
+        "farmKey": "Farm-1",
+        "name": "VegPlot-01: Desi Red Carrot (PC-161)",
+        "area": "0.160 Acre",
+        "cadaster": "Area 1 North Bay",
+        "crop": "Desi Red Carrot on 30\" Raised Beds",
+        "color": "#e67e22",
+        "dash": "solid"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [76.5448, 30.9825],
-          [76.5475, 30.9826],
-          [76.5478, 30.9812],
-          [76.5458, 30.9808],
-          [76.5445, 30.9815],
-          [76.5448, 30.9825]
+          [76.50555872400355, 30.94946362204092],
+          [76.50573165506108, 30.94946244603938],
+          [76.50574751256639, 30.94980984287366],
+          [76.50556827850919, 30.94981279076062],
+          [76.50555872400355, 30.94946362204092]
         ]]
       }
     },
     {
       "type": "Feature",
       "properties": {
+        "plotKey": "VegPlot-03 (Early Potato)",
+        "farmKey": "Farm-1",
+        "name": "VegPlot-03: Early Potato (Kufri Pukhraj)",
+        "area": "0.140 Acre",
+        "cadaster": "Area 1 Central Ridges",
+        "crop": "Seed Potatoes on 60cm Ridges + 3\" Straw",
+        "color": "#27ae60",
+        "dash": "solid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.50573485681751, 30.94946482231508],
+          [76.50591074167474, 30.94946398026544],
+          [76.50593798158242, 30.94991733991868],
+          [76.50577375682235, 30.94991734816193],
+          [76.50575042769795, 30.94980817595847],
+          [76.50573485681751, 30.94946482231508]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotKey": "VegPlot-05 (Cole Crops)",
+        "farmKey": "Farm-1",
+        "name": "VegPlot-05 & 06: Sugarcane + Ginger / Groundnut",
+        "area": "0.360 Acre",
+        "cadaster": "Area 5A / South Shoulder",
+        "crop": "Maturing Cane & Ginger (Flip: Cauliflower & Late Peas)",
+        "color": "#f39c12",
+        "dash": "dashed"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.50591365689546, 30.94946398011934],
+          [76.50598167836301, 30.94945980974739],
+          [76.5060089168588,  30.94988816785657],
+          [76.5059370078979,  30.94988900490285],
+          [76.50591365689546, 30.94946398011934]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotKey": "VegPlot-08 (Turmeric/Cane)",
+        "farmKey": "Farm-1",
+        "name": "VegPlot-08: Turmeric (Curcuma longa)",
+        "area": "0.450 Acre",
+        "cadaster": "Area 5B / Tubewell North",
+        "crop": "High-Yield Turmeric on Drip (Flip: Late Potato Dec)",
+        "color": "#16a085",
+        "dash": "solid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.50605941738978, 30.94945813900497],
+          [76.50631498438213, 30.94945145846206],
+          [76.50679407757256, 30.94977061823218],
+          [76.50679505209423, 30.94980645374994],
+          [76.50633636718251, 30.94951396116027],
+          [76.50637526617493, 30.94991481695741],
+          [76.50609637611282, 30.94992149872672],
+          [76.50605941738978, 30.94945813900497]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotKey": "Wheat/VegPlot-09 (1-Ac Cereal)",
+        "farmKey": "Farm-1",
+        "name": "Wheat/VegPlot-09: Cereal Engine (Area 3 & 4)",
+        "area": "1.000 Acre",
+        "cadaster": "Area 3 & 4 South Core",
+        "crop": "4:1 C-306 Wheat + PBG-7 Desi Chickpea on BBF",
+        "color": "#2ecc71",
+        "dash": "solid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.50625809579974, 30.94998328521011],
+          [76.50701978952911, 30.94996818703413],
+          [76.50704128765011, 30.95048676500738],
+          [76.50628641722308, 30.9505144091689],
+          [76.50625809579974, 30.94998328521011]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotKey": "VegPlot-10 (Broccoli)",
+        "farmKey": "Farm-1",
+        "name": "VegPlot-10: Broccoli & Kohlrabi",
+        "area": "0.120 Acre",
+        "cadaster": "Area 6 / Gate-2 Approach",
+        "crop": "Minuteman Broccoli & Knol Khol in Poplar Bays",
+        "color": "#3498db",
+        "dash": "solid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.50707538386089, 30.95000833177583],
+          [76.50719339850174, 30.95007272888552],
+          [76.5071290351828,  30.95014048260936],
+          [76.50722559483545, 30.95021742729668],
+          [76.50715733160717, 30.95030023679154],
+          [76.50744700996258, 30.95050179662352],
+          [76.50742848065056, 30.95051685328608],
+          [76.50730558774798, 30.95044576490562],
+          [76.50712418201471, 30.95042402872005],
+          [76.50707538386089, 30.95000833177583]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotKey": "VegPlot-11 (Garlic/Peas)",
+        "farmKey": "Farm-1",
+        "name": "VegPlot-11: Winter Garlic in Poplar Alleys",
+        "area": "0.100 Acre",
+        "cadaster": "Area 7 Northeast Bay",
+        "crop": "Desi Garlic Cloves + Matar Ageta-7 under Leaves",
+        "color": "#9b59b6",
+        "dash": "solid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.50704191702084, 30.95048109848105],
+          [76.50720994944473, 30.95046914586315],
+          [76.50727400802043, 30.95048825017314],
+          [76.5073157867799,  30.95051770607724],
+          [76.50734549734457, 30.95055273594938],
+          [76.50705121444342, 30.95065227537402],
+          [76.50704191702084, 30.95048109848105]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotKey": "VegPlot-13 (Driveway & Wings)",
+        "farmKey": "Farm-1",
+        "name": "VegPlot-13: Central Access Roadway & Wings",
+        "area": "0.350 Acre",
+        "cadaster": "Central Service Thoroughfare",
+        "crop": "80% Mown Uncultivated Sod + Trellised Table Peas",
+        "color": "#7f8c8d",
+        "dash": "dash"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.50558390908608, 30.94991911593076],
+          [76.50578172181085, 30.94992152995594],
+          [76.50699544129436, 30.94991419356205],
+          [76.50702935463883, 30.94994690925746],
+          [76.50707457175457, 30.94998083601758],
+          [76.50708163904278, 30.95001234153018],
+          [76.5071268869448,  30.95042191609927],
+          [76.50731481227992, 30.95044008146946],
+          [76.50742361681526, 30.95051278111444],
+          [76.50735155927586, 30.95055640913813],
+          [76.5072724272581,  30.95048613123484],
+          [76.50721025535434, 30.9504667466168],
+          [76.50704352699786, 30.95047766226629],
+          [76.5070124008207,  30.94996629853735],
+          [76.50558956501278, 30.9499821275086],
+          [76.50558390908608, 30.94991911593076]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotKey": "VegPlot-21 (Palak/Radish)",
+        "farmKey": "Farm-2",
         "name": "Farm-2: Village Courtyard Enclave",
         "area": "0.096 Acre",
-        "details": "Protected Courtyard, Banana Stand, Multi-cut Palak, Kasuri Methi",
-        "color": "#e67e22"
+        "cadaster": "Homestead Abadi Cluster",
+        "crop": "Multi-cut Palak, Kasuri Methi, Banana Buffer",
+        "color": "#d35400",
+        "dash": "solid"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [76.5464, 30.9808],
-          [76.5470, 30.9808],
-          [76.5470, 30.9803],
-          [76.5464, 30.9803],
-          [76.5464, 30.9808]
+          [76.50169666936627, 30.94847388300305],
+          [76.50178755410397, 30.94854172149406],
+          [76.50167900153475, 30.94863337985664],
+          [76.50158727524033, 30.94856409789591],
+          [76.50169666936627, 30.94847388300305]
         ]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Farm-3: Walled Spice Garden",
+        "plotKey": "Beds 1 & 2 (Maturing Spice)",
+        "farmKey": "Farm-3",
+        "name": "Farm-3: Walled Garden Spice Beds",
         "area": "0.034 Acre",
-        "details": "4 Raised Beds (3.5 ft wide), Maturing Curcuma longa & Ginger",
-        "color": "#8e44ad"
+        "cadaster": "Masonry Thermal Enclave",
+        "crop": "Maturing Turmeric & Ginger + Fast Rabi Greens",
+        "color": "#8e44ad",
+        "dash": "solid"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [76.5472, 30.9810],
-          [76.5476, 30.9810],
-          [76.5476, 30.9807],
-          [76.5472, 30.9807],
-          [76.5472, 30.9810]
+          [76.50177072579744, 30.94861677900543],
+          [76.50181785106258, 30.94864275946291],
+          [76.50175053199814, 30.9487149311085],
+          [76.50171350482793, 30.94868822873285],
+          [76.50175473803108, 30.94865430790044],
+          [76.50174632243497, 30.94863482204951],
+          [76.50177072579744, 30.94861677900543]
         ]]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Farm-4: Commercial Alley Corridor",
-        "area": "0.250 Acre (50ft x 420ft E-W)",
-        "details": "4 Fruit Lanes, 7 Raised Beds (Carrot/Mooli/Peas), Miyawaki Shield",
-        "color": "#2980b9"
+        "plotKey": "Alley 1 (White Radish)",
+        "farmKey": "Farm-4",
+        "name": "Farm-4: Commercial Fruit-Alley Corridor",
+        "area": "0.250 Acre",
+        "cadaster": "Linear Strip (50' x 420')",
+        "crop": "4 Fruit Lanes, 7 Raised Beds, Miyawaki Shield",
+        "color": "#2980b9",
+        "dash": "solid"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [76.5465, 30.9835],
-          [76.5498, 30.9836],
-          [76.5498, 30.9832],
-          [76.5465, 30.9831],
-          [76.5465, 30.9835]
+          [76.50048241452831, 30.94796243464948],
+          [76.49961096063556, 30.94798737904692],
+          [76.49961189833914, 30.94786107108461],
+          [76.50048053695441, 30.94783129959662],
+          [76.50048241452831, 30.94796243464948]
         ]]
       }
     }
   ];
 
+  // Render KML Features with Individual Boundary Colors
   function renderGeoData(geoData) {
     geojsonLayerGroup.clearLayers();
     const layer = L.geoJSON(geoData, {
       style: function(feature) {
+        const p = feature.properties;
         return {
-          color: feature.properties.color || "#27ae60",
-          weight: 3,
+          color: p.color || "#27ae60",
+          weight: p.dash === 'dash' ? 2 : 3,
+          dashArray: p.dash === 'dash' ? '6, 6' : null,
           opacity: 0.95,
-          fillColor: feature.properties.color || "#27ae60",
-          fillOpacity: 0.45
+          fillColor: p.color || "#27ae60",
+          fillOpacity: 0.40
         };
       },
       onEachFeature: function(feature, layer) {
+        const p = feature.properties;
+        layer.on('click', function() {
+          triggerPlotAction(p.plotKey, p.farmKey);
+        });
+        
         layer.bindPopup(`
-          <div style="font-family:sans-serif; min-width:200px;">
-            <strong style="color:#12432a; font-size:1rem;">${feature.properties.name}</strong><br>
-            <span style="font-size:0.75rem; color:#666;">Owner: ${USER_NAME} (${USER_PHONE})</span><hr style="margin:6px 0; border:0; border-top:1px solid #ddd;">
-            <b>Net Footprint:</b> ${feature.properties.area}<br>
-            <b>Crops & System:</b> ${feature.properties.details}
+          <div style="font-family:sans-serif; min-width:220px; line-height:1.5;">
+            <strong style="color:${p.color}; font-size:1rem;">${p.name}</strong><br>
+            <span style="font-size:0.75rem; color:#777;">Holding: ${p.farmKey} • ${p.cadaster}</span>
+            <hr style="margin:6px 0; border:0; border-top:1px solid #ddd;">
+            <b>Gross Footprint:</b> ${p.area}<br>
+            <b>Target System:</b> ${p.crop}<br><br>
+            <button class="btn" style="padding:5px 8px; font-size:0.75rem; width:100%; justify-content:center; background:${p.color};" onclick="triggerPlotAction('${p.plotKey}', '${p.farmKey}')">
+              Filter Tasks & Log Entry &rarr;
+            </button>
           </div>
         `);
       }
     }).addTo(geojsonLayerGroup);
     
-    map.fitBounds(layer.getBounds(), { padding: [40, 40] });
+    map.fitBounds(layer.getBounds(), { padding: [35, 35] });
   }
 
-  // Render authentic Khairabad polygons immediately
-  renderGeoData(khairabadParcels);
+  // Interactive Plot Trigger
+  function triggerPlotAction(plotKey, farmKey) {
+    filterTasksByFarm(farmKey);
+    const farmSelect = document.getElementById('form-farm');
+    if (farmSelect) {
+      farmSelect.value = farmKey;
+      populatePlotDropdown();
+      const plotSelect = document.getElementById('form-plot');
+      if (plotSelect) plotSelect.value = plotKey;
+    }
+    switchTab('tab-entry');
+    window.scrollTo({ top: 180, behavior: 'smooth' });
+  }
+
+  // Initial Load with Exact KML Survey Parcels
+  renderGeoData(kmlSurveyParcels);
 
   function resetMapView() {
-    renderGeoData(khairabadParcels);
+    renderGeoData(kmlSurveyParcels);
   }
 
-  function syncFromShivalikHub() {
-    // Re-anchors precisely onto the Bela Road Khairabad fields
-    renderGeoData(khairabadParcels);
-    alert("Synced! Ground boundaries successfully anchored to Khairabad cadaster for Devinder Singh (9818526930).");
+  function resetFilterAndShowAll() {
+    renderTasks('ALL');
+    document.getElementById('schedule-title-text').textContent = "Critical Path Execution Matrix (All Holdings)";
   }
 
   // =========================================================================
-  // TASK TABLE LOADER (Populates live from local registry or DB)
+  // TASK ENGINE & DYNAMIC LOGGING
   // =========================================================================
   const taskRegistry = [
     { code: "T-01", farm: "Farm-1, 4", desc: "Non-Inversion Aeration & Gypsum/Murgi Base Dressing", dates: "Sep 24 - 25", cpm: true, lead: "Crew Alpha", status: "DONE" },
@@ -167,10 +728,16 @@
     { code: "T-14", farm: "Farm-1", desc: "Rabi Onion Transplanting & Late Potato", dates: "Dec 20 - 28", cpm: false, lead: "Combined", status: "SCHEDULED" }
   ];
 
-  function renderTasks() {
+  function renderTasks(filterFarmKey = 'ALL') {
     const tbody = document.getElementById('task-tbody');
     tbody.innerHTML = '';
-    taskRegistry.forEach(t => {
+    
+    const filteredList = taskRegistry.filter(t => {
+      if (filterFarmKey === 'ALL') return true;
+      return t.farm.includes(filterFarmKey) || t.farm === "All Farms";
+    });
+
+    filteredList.forEach(t => {
       const tr = document.createElement('tr');
       const sClass = t.status === 'DONE' ? 'status-done' : (t.status === 'IN PROGRESS' ? 'status-prog' : '');
       tr.innerHTML = `
@@ -185,9 +752,14 @@
       tbody.appendChild(tr);
     });
   }
-  renderTasks();
 
-  // Plot Mapping
+  function filterTasksByFarm(farmKey) {
+    renderTasks(farmKey);
+    document.getElementById('schedule-title-text').textContent = `Filtered Task Schedule: ${farmKey}`;
+  }
+
+  renderTasks('ALL');
+
   const plotMapping = {
     "Farm-1": ["VegPlot-01 (Carrots)", "VegPlot-03 (Early Potato)", "VegPlot-05 (Cole Crops)", "VegPlot-07 (Insectary)", "VegPlot-08 (Turmeric/Cane)", "Wheat/VegPlot-09 (1-Ac Cereal)", "VegPlot-10 (Broccoli)", "VegPlot-11 (Garlic/Peas)", "VegPlot-13 (Driveway & Wings)"],
     "Farm-2": ["VegPlot-21 (Palak/Radish)", "VegPlot-22 (Methi Nursery)", "VegPlot-23 (Alliums/Banana)", "VegPlot-24 (Asian Greens)", "VegPlot-25 (Dec Beetroot)"],
@@ -199,7 +771,7 @@
     const farm = document.getElementById('form-farm').value;
     const plotSelect = document.getElementById('form-plot');
     plotSelect.innerHTML = '';
-    plotMapping[farm].forEach(p => {
+    (plotMapping[farm] || []).forEach(p => {
       const opt = document.createElement('option');
       opt.value = p;
       opt.textContent = p;
@@ -284,3 +856,5 @@
     });
   }
 </script>
+</body>
+</html>
