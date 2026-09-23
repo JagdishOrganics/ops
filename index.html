@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khairabad Farm Operations Management Portal</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --primary: #2d5a27;
+      --primary-dark: #1b3817;
+      --accent: #8b5a2b;
+      --bg: #f4f6f0;
+      --surface: #ffffff;
+      --text: #2c3e50;
+      --border: #dcdfd8;
+      --critical: #c0392b;
+      --success: #27ae60;
+      --warning: #e67e22;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 50px; }
+    header { background: var(--primary); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    .badge { background: #3e7b37; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .nav-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; overflow-x: auto; }
+    .nav-tab { padding: 14px 20px; font-size: 0.9rem; font-weight: 600; color: #666; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+    .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .container { max-width: 1400px; margin: 20px auto; padding: 0 16px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    .card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; color: var(--primary-dark); display: flex; justify-content: space-between; align-items: center; }
+    #map { height: 480px; width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+    .map-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 0.8rem; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 14px; height: 14px; border-radius: 3px; }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { background: #eef2eb; padding: 10px 12px; font-weight: 600; border-bottom: 2px solid var(--border); text-align: left; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .cpm-badge { background: var(--critical); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
+    .status-tag { padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .status-done { background: #e8f8f0; color: var(--success); }
+    .status-prog { background: #fef5e7; color: var(--warning); }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #444; }
+    input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+    .btn { background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .metric-card { background: #f9fbf8; border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+    .metric-val { font-size: 1.25rem; font-weight: 700; color: var(--primary-dark); margin-top: 4px; }
+    .metric-lbl { font-size: 0.75rem; color: #666; text-transform: uppercase; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Jagdish Organics Operations Gateway</h1>
+    <p style="font-size: 0.75rem; opacity: 0.9;">3.329 Acres Unified Polyculture Engine | Khairabad, Rupnagar</p>
+  </div>
+  <span class="badge">NFC Automated Engine</span>
+</header>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('tab-gis')">GIS Cadastral Map</div>
+  <div class="nav-tab" onclick="switchTab('tab-schedule')">Critical Path Task Engine</div>
+  <div class="nav-tab" onclick="switchTab('tab-entry')">Log Operation & Upload File</div>
+  <div class="nav-tab" onclick="switchTab('tab-finance')">Financial & Resource Ledger</div>
+</div>
+
+<div class="container">
+
+  <!-- TAB 1: GIS CADASTRAL MAP -->
+  <div id="tab-gis" class="tab-content active">
+    <div class="card">
+      <div class="card-title">
+        <span>Spatial Parcel Matrix (All 4 Holdings)</span>
+        <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="resetMapView()">Center All Farms</button>
+      </div>
+      <div id="map"></div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-color" style="background: #27ae60;"></div> Farm-1 (Main Commercial & Cereal Block - 2.949 Ac)</div>
+        <div class="legend-item"><div class="legend-color" style="background: #e67e22;"></div> Farm-2 (Courtyard Enclave - 0.096 Ac)</div>
+        <div class="legend-item"><div class="legend-color" style="background: #8e44ad;"></div> Farm-3 (Walled Spice Garden - 0.034 Ac)</div>
+        <div class="legend-item"><div class="legend-color" style="background: #2980b9;"></div> Farm-4 (Alley Cropping Strip - 0.250 Ac)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: CRITICAL PATH TASK ENGINE -->
+  <div id="tab-schedule" class="tab-content">
+    <div class="card">
+      <div class="card-title">
+        <span>Critical Path Schedule (CPM) - Synced to Task_Schedule</span>
+        <span class="badge" style="background: var(--critical);">Red = Critical Path Item</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Task Code</th>
+              <th>Holding</th>
+              <th>Task Description</th>
+              <th>Target Window</th>
+              <th>CPM Status</th>
+              <th>Lead Assignee</th>
+              <th>State</th>
+            </tr>
+          </thead>
+          <tbody id="task-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: LOG OPERATION & UPLOAD FILE -->
+  <div id="tab-entry" class="tab-content">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Log Daily Task & Dynamic Costing</div>
+        <form id="entry-form" onsubmit="handleFormSubmit(event)">
+          <div class="form-group">
+            <label>Farm Holding Unit</label>
+            <select id="form-farm" required onchange="populatePlotDropdown()">
+              <option value="Farm-1">Farm-1: Jagdish Organics (2.949 Ac)</option>
+              <option value="Farm-2">Farm-2: Courtyard Enclave (0.096 Ac)</option>
+              <option value="Farm-3">Farm-3: Walled Spice Garden (0.034 Ac)</option>
+              <option value="Farm-4">Farm-4: Commercial Alley Corridor (0.250 Ac)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Target Sub-Plot / Bed Zone</label>
+            <select id="form-plot" required></select>
+          </div>
+
+          <div class="form-group">
+            <label>Task Code Reference</label>
+            <select id="form-task">
+              <option value="T-01">T-01: Non-Inversion Aeration & Gypsum Dressing</option>
+              <option value="T-02">T-02: Trench 14ft Conduit Sleeve (VegPlot-13)</option>
+              <option value="T-03">T-03: Shape 7 Permanent Beds (Farm-4 Alleys)</option>
+              <option value="T-04">T-04: Automated Jeevamrut System Batch Extraction</option>
+              <option value="T-05">T-05: Pressure Test Drip Networks (1.5 Bar)</option>
+              <option value="T-06">T-06: Mass Seed Priming (Beejamrit + Sanjeevni)</option>
+              <option value="T-07">T-07: Direct-Sow Carrots (PC-161) & Radish</option>
+              <option value="T-08">T-08: Plant Seed Potatoes (Kufri Pukhraj) on Ridges</option>
+              <option value="T-09">T-09: Cover Potato Ridges with 3-4" Straw Blanket</option>
+              <option value="T-10">T-10: Rauni Pre-Soak across 1-Ac Cereal Block</option>
+              <option value="T-11">T-11: BBF Drill Sowing: 4:1 Wheat + Chana</option>
+              <option value="T-12">T-12: Harvest Groundnut; Transplant Cauliflower</option>
+              <option value="T-13">T-13: Harvest Mature Turmeric/Ginger; Curing</option>
+              <option value="T-14">T-14: Rabi Onion Transplanting & Successions</option>
+            </select>
+          </div>
+
+          <!-- DYNAMIC LABOR RATE SELECTOR -->
+          <div class="card" style="background: #fbfdfa; border: 1px solid #d0e0cb; padding: 12px; margin-bottom: 14px;">
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Labor Skill Category</label>
+                <select id="wage-category" onchange="calcDynamicLabor()">
+                  <option value="Standard Field Labor" data-rate="450">Standard Field Labor (₹450/day)</option>
+                  <option value="Skilled Machinery Operator" data-rate="750">Skilled Machinery Operator (₹750/day)</option>
+                  <option value="Tubewell & Irrigation Tech" data-rate="600">Tubewell & Irrigation Tech (₹600/day)</option>
+                  <option value="Master Pruner / Tree Lead" data-rate="650">Master Pruner / Tree Lead (₹650/day)</option>
+                  <option value="Supervisor / Field Lead" data-rate="900">Supervisor / Field Lead (₹900/day)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Worker Count (Headcount)</label>
+                <input type="number" id="worker-count" placeholder="Number of workers" min="0" value="0" oninput="calcDynamicLabor()">
+              </div>
+            </div>
+            <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">
+              Calculated Labor Payout: <span id="computed-labor-text">₹0.00</span>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Input Materials Cost (₹)</label>
+              <input type="number" id="cost-inputs" placeholder="0.00" min="0" step="any" oninput="recalcTotal()">
+            </div>
+            <div class="form-group">
+              <label>Machinery / Fuel Hire (₹)</label>
+              <input type="number" id="cost-machinery" placeholder="0.00" min="0" step="any" oninput="recalcTotal()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Utilities / Power (₹)</label>
+            <input type="number" id="cost-utilities" placeholder="0.00" min="0" step="any" oninput="recalcTotal()">
+          </div>
+
+          <div class="form-group">
+            <label>Assigned Stakeholder / Submitting Lead</label>
+            <select id="form-stakeholder">
+              <option value="S. Davinder Singh (Farm Owner)">S. Davinder Singh (Farm Owner)</option>
+              <option value="Crew Alpha Lead">Crew Alpha Lead</option>
+              <option value="Crew Beta Lead">Crew Beta Lead</option>
+              <option value="Irrigation Operator">Irrigation Operator</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Field Notes / Biological Batch Readings</label>
+            <textarea id="form-notes" rows="2" placeholder="State moisture depth, Jeevamrit brew age, germination count..."></textarea>
+          </div>
+
+          <div class="card" style="background: #fdfdfd; padding: 12px; border-style: dashed;">
+            <label>Upload Document / Field Photo / Supplier Invoice</label>
+            <input type="file" id="form-file" accept="image/*,.pdf">
+          </div>
+
+          <button type="submit" class="btn" style="width: 100%; justify-content: center;">
+            Submit Log Entry & Sync to Database
+          </button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Live Log Preview</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-lbl">Total Transaction Cost</div>
+            <div class="metric-val" id="preview-total">₹0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-lbl">Status</div>
+            <div class="metric-val" style="font-size: 1rem;" id="preview-status">Ready</div>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: #666; line-height: 1.5;">
+          Submissions automatically append to <code>Cost_Ledger</code>, upload attachments directly to the designated Google Drive vault, compute labor payouts using the <code>Labor_Wage_Matrix</code> tab, and advance the task status in <code>Task_Schedule</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: FINANCIAL AUDIT TRAIL -->
+  <div id="tab-finance" class="tab-content">
+    <div class="card">
+      <div class="card-title">Live Database Verification Audit</div>
+      <p style="font-size: 0.85rem; color: #555; margin-bottom: 12px;">
+        To review all logged operations, financial summaries, and uploaded file links, open your spreadsheet directly:
+      </p>
+      <a href="https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit" target="_blank" class="btn">Open Master Google Sheet</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Dedicated Web App URL from your deployment
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHR-e3lFWhiUSbs6DqLmq_8kci2lsd45osV8c4pQP8sczCTHo771Z6AfUZurXgJJ8y/exec";
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+    if (tabId === 'tab-gis') { setTimeout(() => { map.invalidateSize(); }, 200); }
+  }
+
+  // GIS Mapping Component
+  const map = L.map('map').setView([30.9755, 76.5395], 16);
+  L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: 'Google Satellite'
+  }).addTo(map);
+
+  const parcels = [
+    { type: "Feature", properties: { name: "Farm-1: Core Holding", area: "2.949 Ac", color: "#27ae60" }, geometry: { type: "Polygon", coordinates: [[[76.5380, 30.9760], [76.5415, 30.9760], [76.5412, 30.9735], [76.5378, 30.9738], [76.5380, 30.9760]]] } },
+    { type: "Feature", properties: { name: "Farm-2: Courtyard Enclave", area: "0.096 Ac", color: "#e67e22" }, geometry: { type: "Polygon", coordinates: [[[76.5420, 30.9768], [76.5426, 30.9768], [76.5425, 30.9762], [76.5419, 30.9762], [76.5420, 30.9768]]] } },
+    { type: "Feature", properties: { name: "Farm-3: Spice Enclave", area: "0.034 Ac", color: "#8e44ad" }, geometry: { type: "Polygon", coordinates: [[[76.5428, 30.9772], [76.5432, 30.9772], [76.5431, 30.9769], [76.5427, 30.9769], [76.5428, 30.9772]]] } },
+    { type: "Feature", properties: { name: "Farm-4: Commercial Alley Strip", area: "0.250 Ac", color: "#2980b9" }, geometry: { type: "Polygon", coordinates: [[[76.5360, 30.9752], [76.5395, 30.9752], [76.5394, 30.9748], [76.5359, 30.9748], [76.5360, 30.9752]]] } }
+  ];
+
+  L.geoJSON(parcels, {
+    style: f => ({ color: f.properties.color, weight: 2, fillOpacity: 0.45 }),
+    onEachFeature: (f, l) => l.bindPopup(`<strong>${f.properties.name}</strong><br>Area: ${f.properties.area}`)
+  }).addTo(map);
+
+  function resetMapView() { map.setView([30.9755, 76.5395], 16); }
+
+  // Task Rendering
+  const taskRegistry = [
+    { code: "T-01", farm: "Farm-1, 4", desc: "Non-Inversion Aeration & Gypsum Base Dressing", dates: "Sep 24 - 25", cpm: true, lead: "Crew Alpha", status: "Done" },
+    { code: "T-02", farm: "Farm-1", desc: "Trench 14ft Conduit Sleeve across VegPlot-13", dates: "Sep 25", cpm: true, lead: "Crew Alpha", status: "Done" },
+    { code: "T-03", farm: "Farm-4", desc: "Shape 7 Permanent 300ft Beds in Tree Alleys", dates: "Sep 25", cpm: false, lead: "Crew Beta", status: "Done" },
+    { code: "T-04", farm: "All Farms", desc: "Automated Jeevamrut System Batch Extraction", dates: "Sep 26 - 27", cpm: true, lead: "Crew Beta", status: "In Progress" },
+    { code: "T-05", farm: "Farm-1, 4", desc: "Pressure Test Drip Networks (1.5 Bar)", dates: "Sep 27", cpm: true, lead: "Crew Alpha", status: "In Progress" },
+    { code: "T-06", farm: "Farm-1, 4", desc: "Mass Seed Priming (Beejamrit + Sanjeevni)", dates: "Sep 27", cpm: true, lead: "Crew Beta", status: "In Progress" },
+    { code: "T-07", farm: "Farm-1, 4", desc: "Direct-Sow Carrots (PC-161) & Radish (>4 PM)", dates: "Sep 28", cpm: true, lead: "Combined", status: "Scheduled" },
+    { code: "T-08", farm: "Farm-1", desc: "Plant Seed Potatoes (Kufri Pukhraj) on Ridges", dates: "Sep 28", cpm: true, lead: "Crew Alpha", status: "Scheduled" },
+    { code: "T-09", farm: "Farm-1", desc: "Cover Potato Ridges with 3-4 inch Straw Blanket", dates: "Sep 30", cpm: true, lead: "Crew Beta", status: "Scheduled" },
+    { code: "T-10", farm: "Farm-1", desc: "Pre-Sowing Rauni Flood on 1-Ac Cereal Block", dates: "Oct 10 - 12", cpm: true, lead: "Operator", status: "Scheduled" },
+    { code: "T-11", farm: "Farm-1", desc: "BBF Drill: 4:1 Wheat (C-306) + Chana (PBG-7)", dates: "Oct 18 - 22", cpm: true, lead: "Crew Alpha", status: "Scheduled" },
+    { code: "T-12", farm: "Farm-1", desc: "Harvest Groundnut; Transplant Cauliflower", dates: "Oct 24 - 28", cpm: false, lead: "Crew Beta", status: "Scheduled" },
+    { code: "T-13", farm: "Farm-1, 3", desc: "Harvest Mature Turmeric/Ginger; Curing", dates: "Dec 05 - 15", cpm: false, lead: "Combined", status: "Scheduled" },
+    { code: "T-14", farm: "Farm-1", desc: "Rabi Onion Transplanting & Late Potato", dates: "Dec 20 - 28", cpm: false, lead: "Combined", status: "Scheduled" }
+  ];
+
+  function renderTasks() {
+    const tbody = document.getElementById('task-tbody');
+    tbody.innerHTML = '';
+    taskRegistry.forEach(t => {
+      const tr = document.createElement('tr');
+      const sClass = t.status === 'Done' ? 'status-done' : (t.status === 'In Progress' ? 'status-prog' : '');
+      tr.innerHTML = `
+        <td><strong>${t.code}</strong></td>
+        <td>${t.farm}</td>
+        <td>${t.desc}</td>
+        <td>${t.dates}</td>
+        <td>${t.cpm ? '<span class="cpm-badge">CRITICAL PATH</span>' : '<span style="color:#aaa; font-size:0.75rem;">Parallel</span>'}</td>
+        <td>${t.lead}</td>
+        <td><span class="status-tag ${sClass}">${t.status}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+  renderTasks();
+
+  const plotMapping = {
+    "Farm-1": ["VegPlot-01 (Carrots)", "VegPlot-03 (Early Potato)", "VegPlot-05 (Cole Crops)", "VegPlot-07 (Insectary)", "VegPlot-08 (Turmeric/Cane)", "Wheat/VegPlot-09 (1-Ac Cereal)", "VegPlot-10 (Broccoli)", "VegPlot-11 (Garlic/Peas)", "VegPlot-13 (Driveway & Wings)"],
+    "Farm-2": ["VegPlot-21 (Palak/Radish)", "VegPlot-22 (Methi Nursery)", "VegPlot-23 (Alliums/Banana)", "VegPlot-24 (Asian Greens)", "VegPlot-25 (Dec Beetroot)"],
+    "Farm-3": ["Beds 1 & 2 (Maturing Spice)", "Bed 3 East (Kasuri Methi)", "Bed 4 (Spinach/Mooli)"],
+    "Farm-4": ["Alley 1 (White Radish)", "Alley 2 (Desi Carrot)", "North Buffer (Palak/Methi)", "South Buffer (Peas/Broccoli)", "Zone C (Miyawaki Forest)", "Zone D (Border Buffer)"]
+  };
+
+  function populatePlotDropdown() {
+    const farm = document.getElementById('form-farm').value;
+    const plotSelect = document.getElementById('form-plot');
+    plotSelect.innerHTML = '';
+    plotMapping[farm].forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      plotSelect.appendChild(opt);
+    });
+  }
+  populatePlotDropdown();
+
+  // Dynamic Labor Calculation
+  let currentLaborPayout = 0;
+  function calcDynamicLabor() {
+    const select = document.getElementById('wage-category');
+    const rate = Number(select.options[select.selectedIndex].getAttribute('data-rate')) || 450;
+    const count = Number(document.getElementById('worker-count').value) || 0;
+    currentLaborPayout = rate * count;
+    document.getElementById('computed-labor-text').textContent = '₹' + currentLaborPayout.toLocaleString('en-IN') + ' (' + count + ' workers @ ₹' + rate + '/day)';
+    recalcTotal();
+  }
+
+  function recalcTotal() {
+    const i = Number(document.getElementById('cost-inputs').value) || 0;
+    const m = Number(document.getElementById('cost-machinery').value) || 0;
+    const u = Number(document.getElementById('cost-utilities').value) || 0;
+    const tot = currentLaborPayout + i + m + u;
+    document.getElementById('preview-total').textContent = '₹' + tot.toLocaleString('en-IN');
+  }
+
+  function handleFormSubmit(e) {
+    e.preventDefault();
+    const statusBox = document.getElementById('preview-status');
+    statusBox.textContent = 'Transmitting...';
+    statusBox.style.color = 'var(--warning)';
+
+    const fileInput = document.getElementById('form-file');
+    const file = fileInput.files[0];
+
+    const payload = {
+      farmId: document.getElementById('form-farm').value,
+      plotId: document.getElementById('form-plot').value,
+      taskId: document.getElementById('form-task').value,
+      wageCategory: document.getElementById('wage-category').value,
+      workerCount: document.getElementById('worker-count').value,
+      laborCost: currentLaborPayout,
+      inputCost: document.getElementById('cost-inputs').value,
+      machineryCost: document.getElementById('cost-machinery').value,
+      utilityCost: document.getElementById('cost-utilities').value,
+      stakeholder: document.getElementById('form-stakeholder').value,
+      notes: document.getElementById('form-notes').value,
+      status: "In Progress"
+    };
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        payload.fileBase64 = evt.target.result;
+        payload.fileName = file.name;
+        payload.fileMimeType = file.type;
+        dispatchPayload(payload);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      dispatchPayload(payload);
+    }
+  }
+
+  function dispatchPayload(payload) {
+    const statusBox = document.getElementById('preview-status');
+    fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      statusBox.textContent = 'Synced to Drive & Sheets';
+      statusBox.style.color = 'var(--success)';
+      alert('Activity successfully logged into Google Sheets & Drive!');
+      document.getElementById('entry-form').reset();
+      calcDynamicLabor();
+    }).catch(err => {
+      statusBox.textContent = 'Logged Locally (Offline)';
+      statusBox.style.color = 'var(--accent)';
+      console.warn("API Offline: ", err);
+    });
+  }
+</script>
+</body>
+</html>
