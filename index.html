@@ -6,11 +6,7 @@
   <title>Jagdish Organics - Operations Gateway</title>
   
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2312432a'/%3E%3Ccircle cx='50' cy='35' r='12' fill='%23e69a0b'/%3E%3Cpath d='M30 65 Q50 45 50 65 Q50 45 70 65' stroke='%23e69a0b' stroke-width='4' fill='none'/%3E%3C/svg%3E">
-  
-  <!-- Leaflet GIS CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  
-  <!-- ExifReader for instant geotag & timestamp extraction from all phones -->
   <script src="https://cdn.jsdelivr.net/npm/exifreader@4.23.3/dist/exif-reader.min.js"></script>
 
   <style>
@@ -46,7 +42,7 @@
     .header-badges { display: flex; align-items: center; gap: 8px; }
     .badge { background: var(--brand-green-light); border: 1px solid var(--brand-gold); color: #fff; padding: 4px 8px; border-radius: 12px; font-size: 0.70rem; font-weight: 600; }
     
-    .nav-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nav-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; overflow-x: auto; }
     .nav-tab { padding: 12px 16px; font-size: 0.85rem; font-weight: 600; color: #555; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
     .nav-tab:hover { color: var(--brand-green); }
     .nav-tab.active { color: var(--brand-green); border-bottom-color: var(--brand-green); font-weight: 700; }
@@ -61,7 +57,7 @@
     .card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.05); padding: 16px; margin-bottom: 16px; }
     .card-title { font-size: 1.02rem; font-weight: 700; margin-bottom: 12px; color: var(--brand-green); display: flex; justify-content: space-between; align-items: center; }
 
-    #map { height: 540px; width: 100%; border-radius: 6px; border: 1px solid var(--border); cursor: crosshair; }
+    #map { height: 550px; width: 100%; border-radius: 6px; border: 1px solid var(--border); }
     
     .filter-panel {
       background: #eef4ee;
@@ -102,7 +98,6 @@
     .btn-gold { background: var(--brand-gold); color: #fff; }
     .btn-gold:hover { background: #cc8400; }
     .btn-outline { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); }
-
     .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
     .metric-card { background: #fbfdfa; border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
     .metric-val { font-size: 1.15rem; font-weight: 700; color: var(--brand-green); margin-top: 3px; }
@@ -134,10 +129,9 @@
       <text x="50" y="78" text-anchor="middle" font-size="15" font-weight="900" fill="#12432a">JAGDISH</text>
       <text x="50" y="91" text-anchor="middle" font-size="11" font-weight="800" fill="#12432a">ORGANICS</text>
     </svg>
-    
     <div class="brand-title">
       <h1>Jagdish Organics Operations Gateway</h1>
-      <p>Green By Nature • Universal Mobile + Dynamic Sheets Sync</p>
+      <p>Green By Nature • Persistent Map Layers & Real-Time Sync</p>
     </div>
   </div>
 
@@ -148,7 +142,7 @@
 </header>
 
 <div class="nav-tabs">
-  <div class="nav-tab active" id="btn-tab-gis" onclick="switchTab('tab-gis')">GIS Cadastral Map (20 Plots)</div>
+  <div class="nav-tab active" id="btn-tab-gis" onclick="switchTab('tab-gis')">GIS Map & Layers</div>
   <div class="nav-tab" id="btn-tab-schedule" onclick="switchTab('tab-schedule')">Critical Path Task Engine</div>
   <div class="nav-tab" id="btn-tab-entry" onclick="switchTab('tab-entry')">Log Operation & Upload File</div>
   <div class="nav-tab" id="btn-tab-finance" onclick="switchTab('tab-finance')">Financial & Resource Ledger</div>
@@ -156,16 +150,14 @@
 
 <div class="container">
 
-  <!-- TAB 1: GIS MAP & GEOTAGGED PHOTO LAYER -->
+  <!-- TAB 1: GIS MAP WITH DUAL LAYERS (PHOTOS & TASKS) -->
   <div id="tab-gis" class="tab-content active">
     <div class="card">
-      
-      <!-- Geotag & Temporal Control Toolbar -->
       <div class="filter-panel">
         <div class="filter-group">
-          <label>Upload iPhone/Android Field Photos:</label>
+          <label>Add Field Photos:</label>
           <input type="file" id="photo-file-input" multiple accept="image/*" style="width:auto;">
-          <span id="photo-load-count" style="color:var(--brand-green); font-size:0.75rem;">(0 photos)</span>
+          <span id="photo-load-count" style="color:var(--brand-green); font-size:0.75rem;">(Loading...)</span>
         </div>
         
         <div class="filter-group">
@@ -186,34 +178,35 @@
           <button class="btn btn-outline" style="padding:4px 8px;" onclick="clearDateFilter()">Clear</button>
         </div>
 
-        <div style="display:flex; gap:6px;">
-          <button class="btn btn-gold" onclick="resetFilterAndShowAll()">Show All Tasks</button>
-          <button class="btn" onclick="resetMapView()">Center All Plots</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label style="font-size:0.8rem; font-weight:700; color:var(--brand-green); display:flex; align-items:center; gap:4px;">
+            <input type="checkbox" id="toggle-tasks-layer" checked onchange="toggleTasksOverlay()"> Tasks Overlay
+          </label>
+          <label style="font-size:0.8rem; font-weight:700; color:var(--brand-green); display:flex; align-items:center; gap:4px;">
+            <input type="checkbox" id="toggle-photos-layer" checked onchange="togglePhotosOverlay()"> Photos Overlay
+          </label>
+          <button class="btn btn-gold" onclick="resetMapView()">Center Plots</button>
         </div>
       </div>
       
       <div id="manual-pin-prompt" class="manual-pin-notice">
-        📍 <strong>Location missing in image:</strong> Tap anywhere on the map to set this photo's location.
+        📍 <strong>Location missing in image:</strong> Tap anywhere on the map to anchor this photo's location.
       </div>
       
       <div id="map"></div>
       
-      <!-- Complete 20-Polygon Cadaster Legend -->
       <div class="map-legend">
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-01 (Carrots)', 'Farm-1')"><div class="legend-color" style="background:#e67e22;"></div> Area 1A: VegPlot-01 (Carrots, 0.16 Ac)</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-03 (Early Potato)', 'Farm-1')"><div class="legend-color" style="background:#27ae60;"></div> Area 1B: VegPlot-03 (Potato Ridges, 0.14 Ac)</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-05 (Cole Crops)', 'Farm-1')"><div class="legend-color" style="background:#f39c12;"></div> Area 5A1: Cane/Groundnut</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-05 (Cole Crops)', 'Farm-1')"><div class="legend-color" style="background:#d35400;"></div> Area 5A2: Cane/Ginger</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-08 (Turmeric/Cane)', 'Farm-1')"><div class="legend-color" style="background:#16a085;"></div> Area 5B1: Turmeric Stand (0.45 Ac)</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-08 (Turmeric/Cane)', 'Farm-1')"><div class="legend-color" style="background:#1abc9c;"></div> Area 5B2: Turmeric Agroforestry Bay</div>
-        <div class="legend-item" onclick="triggerPlotAction('Wheat/VegPlot-09 (1-Ac Cereal)', 'Farm-1')"><div class="legend-color" style="background:#2ecc71;"></div> Area 3: Cereal Block West (0.50 Ac)</div>
-        <div class="legend-item" onclick="triggerPlotAction('Wheat/VegPlot-09 (1-Ac Cereal)', 'Farm-1')"><div class="legend-color" style="background:#27ae60;"></div> Area 4: Cereal Block East (0.50 Ac)</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-10 (Broccoli)', 'Farm-1')"><div class="legend-color" style="background:#3498db;"></div> Area 6: VegPlot-10 (Broccoli & Knol Khol)</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-11 (Garlic/Peas)', 'Farm-1')"><div class="legend-color" style="background:#9b59b6;"></div> Area 7: VegPlot-11 (Garlic in Poplar Alleys)</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-13 (Driveway & Wings)', 'Farm-1')"><div class="legend-color" style="background:#7f8c8d;"></div> VegPlot-13: Central Unobstructed Driveway</div>
-        <div class="legend-item" onclick="triggerPlotAction('VegPlot-21 (Palak/Radish)', 'Farm-2')"><div class="legend-color" style="background:#e67e22;"></div> Farm-2: Courtyard Enclave</div>
-        <div class="legend-item" onclick="triggerPlotAction('Beds 1 & 2 (Maturing Spice)', 'Farm-3')"><div class="legend-color" style="background:#8e44ad;"></div> Farm-3: Walled Spice Beds</div>
-        <div class="legend-item" onclick="triggerPlotAction('Alley 1 (White Radish)', 'Farm-4')"><div class="legend-color" style="background:#2980b9;"></div> Farm-4: Commercial Fruit-Alley Strip</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-01 (Carrots)')"><div class="legend-color" style="background:#e67e22;"></div> Area 1A: VegPlot-01 (Carrots)</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-03 (Early Potato)')"><div class="legend-color" style="background:#27ae60;"></div> Area 1B: VegPlot-03 (Potatoes)</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-05 (Cole Crops)')"><div class="legend-color" style="background:#f39c12;"></div> Area 5A: Cane / Ginger / Peanut</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-08 (Turmeric/Cane)')"><div class="legend-color" style="background:#16a085;"></div> Area 5B: Turmeric Stand</div>
+        <div class="legend-item" onclick="highlightPlot('Wheat/VegPlot-09 (1-Ac Cereal)')"><div class="legend-color" style="background:#2ecc71;"></div> Area 3 & 4: 1-Ac Wheat BBF</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-10 (Broccoli)')"><div class="legend-color" style="background:#3498db;"></div> Area 6: VegPlot-10 (Broccoli)</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-11 (Garlic/Peas)')"><div class="legend-color" style="background:#9b59b6;"></div> Area 7: VegPlot-11 (Garlic/Peas)</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-13 (Driveway & Wings)')"><div class="legend-color" style="background:#7f8c8d;"></div> VegPlot-13: Central Driveway</div>
+        <div class="legend-item" onclick="highlightPlot('VegPlot-21 (Palak/Radish)')"><div class="legend-color" style="background:#e67e22;"></div> Farm-2: Courtyard Enclave</div>
+        <div class="legend-item" onclick="highlightPlot('Beds 1 & 2 (Maturing Spice)')"><div class="legend-color" style="background:#8e44ad;"></div> Farm-3: Spice Beds</div>
+        <div class="legend-item" onclick="highlightPlot('Alley 1 (White Radish)')"><div class="legend-color" style="background:#2980b9;"></div> Farm-4: Fruit-Alley Corridor</div>
       </div>
     </div>
   </div>
@@ -222,9 +215,9 @@
   <div id="tab-schedule" class="tab-content">
     <div class="card">
       <div class="card-title">
-        <span id="schedule-title-text">Critical Path Execution Matrix (Live Synced from Google Sheets)</span>
+        <span id="schedule-title-text">Critical Path Execution Matrix (Synced from Google Sheets)</span>
         <div style="display:flex; gap:8px;">
-          <button class="btn" style="padding:4px 10px; font-size:0.75rem;" onclick="syncWithGoogleSheet()">↻ Refresh from Sheet</button>
+          <button class="btn" style="padding:4px 10px; font-size:0.75rem;" onclick="syncWithGoogleSheet()">↻ Refresh Sheet</button>
           <span class="badge" style="background: var(--critical);">Red = Critical Path</span>
         </div>
       </div>
@@ -238,7 +231,7 @@
               <th>Schedule Window</th>
               <th>CPM Track</th>
               <th>Lead Assignee</th>
-              <th>Status in Sheet</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody id="task-tbody"></tbody>
@@ -273,7 +266,6 @@
             <select id="form-task"></select>
           </div>
 
-          <!-- Dynamic Wage Rate Category from Sheet -->
           <div class="card" style="background: #fbfdfa; border: 1px solid #d0e0cb; padding: 12px; margin-bottom: 12px;">
             <div class="grid-2">
               <div class="form-group">
@@ -316,11 +308,10 @@
             <textarea id="form-notes" rows="2" placeholder="Record Jeevamrit age, soil moisture condition, sowing counts..."></textarea>
           </div>
 
-          <!-- Universal Image Upload with Client-Side Auto-Compress -->
           <div class="card" style="background: #fdfdfd; padding: 12px; border-style: dashed;">
-            <label>Upload Photo / Bill / Invoice (All Phones - Auto Optimized)</label>
+            <label>Upload Photo / Invoice (Auto Compressed for Fast Upload)</label>
             <input type="file" id="form-file" accept="image/*,.pdf" onchange="processSingleUploadFile(this)">
-            <div id="file-compression-status" style="font-size:0.72rem; color:#666; margin-top:4px;">Ready for any image size.</div>
+            <div id="file-compression-status" style="font-size:0.72rem; color:#666; margin-top:4px;">Ready for any phone photo.</div>
             <input type="hidden" id="form-lat">
             <input type="hidden" id="form-lng">
           </div>
@@ -344,7 +335,7 @@
           </div>
         </div>
         <p style="font-size: 0.80rem; color: #555; line-height: 1.5;">
-          <strong>Dynamic Two-Way Sync:</strong> Tasks, Labor Rates, and Stakeholder lists load in real time from your Google Sheet tabs (<code>Task_Schedule</code>, <code>Labor_Wage_Matrix</code>, <code>Stakeholder_Directory</code>). Updating values in the spreadsheet automatically refreshes the options in this form.
+          <strong>Dynamic Integration:</strong> Work logs and photos are saved directly to your Google Drive and Sheet. Clicking on plots or task pins on the map lets you inspect field status without forcing you into form entry mode.
         </p>
       </div>
     </div>
@@ -369,8 +360,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  // Your Google Apps Script Web App Deployment URL
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHR-e3lFWhiUSbs6DqLmq_8kci2lsd45osV8c4pQP8sczCTHo771Z6AfUZurXgJJ8y/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYXTBC98YHUPlyswEzYd7ZvTRYerdz_06-skhWoO8M11WJQTSdXOkTj2qiapES8w3tQg/exec";
   const USER_PHONE = "9818526930";
   const USER_NAME = "Devinder Singh";
 
@@ -384,8 +374,7 @@
   }
 
   // =========================================================================
-  // GIS ENGINE: Exact Survey Bounds in Village Khairabad (Bela Road)
-  // Centered on 2026RabiSeason.kml: Lat 30.9498° N, Lon 76.5058° E
+  // GIS ENGINE: Village Khairabad (Bela Road) Coordinates from KML
   // =========================================================================
   const map = L.map('map').setView([30.9498, 76.5058], 18);
 
@@ -397,111 +386,113 @@
 
   let geojsonLayerGroup = L.layerGroup().addTo(map);
   let photoLayerGroup = L.layerGroup().addTo(map);
+  let tasksLayerGroup = L.layerGroup().addTo(map);
 
-  // Complete, Unabridged 20-Polygon Survey Extraction from 2026RabiSeason.kml
+  // Complete 20-Polygon Survey Extraction from 2026RabiSeason.kml
   const completeKmlParcels = [
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-01 (Carrots)", "farmKey": "Farm-1", "name": "Area 1A: VegPlot-01 (Carrots)", "area": "0.160 Acre", "crop": "Desi Red Carrot (PC-161)", "color": "#e67e22" },
+      "properties": { "plotKey": "VegPlot-01 (Carrots)", "farmKey": "Farm-1", "name": "Area 1A: VegPlot-01 (Carrots)", "area": "0.160 Acre", "crop": "Desi Red Carrot (PC-161)", "color": "#e67e22", "center": [30.949638, 76.505653] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50555872400355, 30.94946362204092], [76.50573165506108, 30.94946244603938], [76.50574751256639, 30.94980984287366], [76.50556827850919, 30.94981279076062], [76.50555872400355, 30.94946362204092]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-03 (Early Potato)", "farmKey": "Farm-1", "name": "Area 1B: VegPlot-03 (Early Potato)", "area": "0.140 Acre", "crop": "Seed Potato (Kufri Pukhraj) on 60cm Ridges", "color": "#27ae60" },
+      "properties": { "plotKey": "VegPlot-03 (Early Potato)", "farmKey": "Farm-1", "name": "Area 1B: VegPlot-03 (Early Potato)", "area": "0.140 Acre", "crop": "Seed Potato (Kufri Pukhraj) on 60cm Ridges", "color": "#27ae60", "center": [30.949691, 76.505822] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50573485681751, 30.94946482231508], [76.50591074167474, 30.94946398026544], [76.50593798158242, 30.94991733991868], [76.50577375682235, 30.94991734816193], [76.50575042769795, 30.94980817595847], [76.50573485681751, 30.94946482231508]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-05 (Cole Crops)", "farmKey": "Farm-1", "name": "Area 5A1: Sugarcane + Groundnut", "area": "0.080 Acre", "crop": "Sugarcane clumps + Groundnut understory", "color": "#f39c12" },
+      "properties": { "plotKey": "VegPlot-05 (Cole Crops)", "farmKey": "Farm-1", "name": "Area 5A1: Sugarcane + Groundnut", "area": "0.080 Acre", "crop": "Sugarcane clumps + Groundnut understory", "color": "#f39c12", "center": [30.949676, 76.505961] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50591365689546, 30.94946398011934], [76.50598167836301, 30.94945980974739], [76.5060089168588, 30.94988816785657], [76.5059370078979, 30.94988900490285], [76.50591365689546, 30.94946398011934]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-05 (Cole Crops)", "farmKey": "Farm-1", "name": "Area 5A2: Sugarcane + Ginger", "area": "0.100 Acre", "crop": "Sugarcane + Maturing Ginger Beds", "color": "#d35400" },
+      "properties": { "plotKey": "VegPlot-05 (Cole Crops)", "farmKey": "Farm-1", "name": "Area 5A2: Sugarcane + Ginger", "area": "0.100 Acre", "crop": "Sugarcane + Maturing Ginger Beds", "color": "#d35400", "center": [30.949688, 76.506041] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50598653717736, 30.94946147626748], [76.50605747373638, 30.94945563895473], [76.50609443233191, 30.94991733190117], [76.50594089727362, 30.94992400684608], [76.50593506429172, 30.94988733823564], [76.50600891691666, 30.94988900123939], [76.50598653717736, 30.94946147626748]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-08 (Turmeric/Cane)", "farmKey": "Farm-1", "name": "Area 5B1: Turmeric Stand (Tubewell Front)", "area": "0.220 Acre", "crop": "Curcuma longa under Drip (Flip: Potato Dec)", "color": "#16a085" },
+      "properties": { "plotKey": "VegPlot-08 (Turmeric/Cane)", "farmKey": "Farm-1", "name": "Area 5B1: Turmeric Stand (Tubewell Front)", "area": "0.220 Acre", "crop": "Curcuma longa under Drip (Flip: Potato Dec)", "color": "#16a085", "center": [30.949686, 76.506427] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50605941738978, 30.94945813900497], [76.50631498438213, 30.94945145846206], [76.50679407757256, 30.94977061823218], [76.50679505209423, 30.94980645374994], [76.50633636718251, 30.94951396116027], [76.50637526617493, 30.94991481695741], [76.50609637611282, 30.94992149872672], [76.50605941738978, 30.94945813900497]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-08 (Turmeric/Cane)", "farmKey": "Farm-1", "name": "Area 5B2: Turmeric Agroforestry Bay", "area": "0.230 Acre", "crop": "Turmeric + Poplar Shelterbelt", "color": "#1abc9c" },
+      "properties": { "plotKey": "VegPlot-08 (Turmeric/Cane)", "farmKey": "Farm-1", "name": "Area 5B2: Turmeric Agroforestry Bay", "area": "0.230 Acre", "crop": "Turmeric + Poplar Shelterbelt", "color": "#1abc9c", "center": [30.949718, 76.506567] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.5063392828184, 30.94951979470884], [76.5067950520291, 30.94980562036589], [76.50679797553047, 30.94991062677759], [76.50637915328599, 30.94991648351535], [76.5063392828184, 30.94951979470884]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-08 (Turmeric/Cane)", "farmKey": "Farm-1", "name": "Area 5 East Margin (Silt Trap Buffer)", "area": "0.040 Acre", "crop": "Agroforestry Poplars + Silt Drainage", "color": "#117a65" },
+      "properties": { "plotKey": "VegPlot-08 (Turmeric/Cane)", "farmKey": "Farm-1", "name": "Area 5 East Margin (Silt Trap Buffer)", "area": "0.040 Acre", "crop": "Agroforestry Poplars + Silt Drainage", "color": "#117a65", "center": [30.949843, 76.506895] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50680087999886, 30.94977311799903], [76.50698843870849, 30.94991311608219], [76.50680186277766, 30.94991396010717], [76.50680087999886, 30.94977311799903]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "Wheat/VegPlot-09 (1-Ac Cereal)", "farmKey": "Farm-1", "name": "Area 3: Cereal Block West (Basmati / Wheat 677)", "area": "0.500 Acre", "crop": "4:1 C-306 Wheat + PBG-7 Chana on BBF", "color": "#2ecc71" },
+      "properties": { "plotKey": "Wheat/VegPlot-09 (1-Ac Cereal)", "farmKey": "Farm-1", "name": "Area 3: Cereal Block West (Wheat 677)", "area": "0.500 Acre", "crop": "4:1 C-306 Wheat + PBG-7 Chana on BBF", "color": "#2ecc71", "center": [30.950122, 76.505928] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50624378106507, 30.94998347942116], [76.50625849013065, 30.9502535453328], [76.50560205686612, 30.95026145203986], [76.50559654580228, 30.95022208395531], [76.5056351052135, 30.95021735789534], [76.5056314176508, 30.94998429775184], [76.50624378106507, 30.94998347942116]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "Wheat/VegPlot-09 (1-Ac Cereal)", "farmKey": "Farm-1", "name": "Area 4: Cereal Block East (Basmati / Wheat 677)", "area": "0.500 Acre", "crop": "4:1 C-306 Wheat + PBG-7 Chana on BBF", "color": "#27ae60" },
+      "properties": { "plotKey": "Wheat/VegPlot-09 (1-Ac Cereal)", "farmKey": "Farm-1", "name": "Area 4: Cereal Block East (Wheat 677)", "area": "0.500 Acre", "crop": "4:1 C-306 Wheat + PBG-7 Chana on BBF", "color": "#27ae60", "center": [30.950248, 76.506651] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50625809579974, 30.94998328521011], [76.50701978952911, 30.94996818703413], [76.50704128765011, 30.95048676500738], [76.50628641722308, 30.9505144091689], [76.50625809579974, 30.94998328521011]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-10 (Broccoli)", "farmKey": "Farm-1", "name": "Area 6: VegPlot-10 (Broccoli & Knol Khol)", "area": "0.120 Acre", "crop": "Heading Broccoli + Kohlrabi in Poplar Bays", "color": "#3498db" },
+      "properties": { "plotKey": "VegPlot-10 (Broccoli)", "farmKey": "Farm-1", "name": "Area 6: VegPlot-10 (Broccoli & Knol Khol)", "area": "0.120 Acre", "crop": "Heading Broccoli + Kohlrabi in Poplar Bays", "color": "#3498db", "center": [30.950255, 76.507259] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50707538386089, 30.95000833177583], [76.50719339850174, 30.95007272888552], [76.5071290351828, 30.95014048260936], [76.50722559483545, 30.95021742729668], [76.50715733160717, 30.95030023679154], [76.50744700996258, 30.95050179662352], [76.50742848065056, 30.95051685328608], [76.50730558774798, 30.95044576490562], [76.50712418201471, 30.95042402872005], [76.50707538386089, 30.95000833177583]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-11 (Garlic/Peas)", "farmKey": "Farm-1", "name": "Area 7: VegPlot-11 (Garlic in Poplar Alleys)", "area": "0.100 Acre", "crop": "Desi Garlic + Matar Ageta-7 under Leaves", "color": "#9b59b6" },
+      "properties": { "plotKey": "VegPlot-11 (Garlic/Peas)", "farmKey": "Farm-1", "name": "Area 7: VegPlot-11 (Garlic in Poplar Alleys)", "area": "0.100 Acre", "crop": "Desi Garlic + Matar Ageta-7 under Leaves", "color": "#9b59b6", "center": [30.950566, 76.507194] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50704191702084, 30.95048109848105], [76.50720994944473, 30.95046914586315], [76.50727400802043, 30.95048825017314], [76.5073157867799, 30.95051770607724], [76.50734549734457, 30.95055273594938], [76.50705121444342, 30.95065227537402], [76.50704191702084, 30.95048109848105]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-13 (Driveway & Wings)", "farmKey": "Farm-1", "name": "VegPlot-13: Central Access Roadway & Wings", "area": "0.350 Acre", "crop": "80% Mown Uncultivated Sod + Trellised Table Peas", "color": "#7f8c8d" },
+      "properties": { "plotKey": "VegPlot-13 (Driveway & Wings)", "farmKey": "Farm-1", "name": "VegPlot-13: Central Driveway & Wings", "area": "0.350 Acre", "crop": "80% Mown Uncultivated Sod + Trellised Table Peas", "color": "#7f8c8d", "center": [30.950238, 76.506509] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50558390908608, 30.94991911593076], [76.50578172181085, 30.94992152995594], [76.50699544129436, 30.94991419356205], [76.50702935463883, 30.94994690925746], [76.50707457175457, 30.94998083601758], [76.50708163904278, 30.95001234153018], [76.5071268869448, 30.95042191609927], [76.50731481227992, 30.95044008146946], [76.50742361681526, 30.95051278111444], [76.50735155927586, 30.95055640913813], [76.5072724272581, 30.95048613123484], [76.50721025535434, 30.9504667466168], [76.50704352699786, 30.95047766226629], [76.5070124008207, 30.94996629853735], [76.50558956501278, 30.9499821275086], [76.50558390908608, 30.94991911593076]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-21 (Palak/Radish)", "farmKey": "Farm-2", "name": "Farm-2: Courtyard Core Enclave", "area": "0.060 Acre", "crop": "Multi-cut Palak & Radish Beds", "color": "#e67e22" },
+      "properties": { "plotKey": "VegPlot-21 (Palak/Radish)", "farmKey": "Farm-2", "name": "Farm-2: Courtyard Core Enclave", "area": "0.060 Acre", "crop": "Multi-cut Palak & Radish Beds", "color": "#e67e22", "center": [30.948553, 76.501686] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50169666936627, 30.94847388300305], [76.50178755410397, 30.94854172149406], [76.50167900153475, 30.94863337985664], [76.50158727524033, 30.94856409789591], [76.50169666936627, 30.94847388300305]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "Beds 1 & 2 (Maturing Spice)", "farmKey": "Farm-3", "name": "Farm-3: Beds 1 & 2 (Maturing Spice)", "area": "0.020 Acre", "crop": "Maturing Turmeric & Ginger Rhizomes", "color": "#8e44ad" },
+      "properties": { "plotKey": "Beds 1 & 2 (Maturing Spice)", "farmKey": "Farm-3", "name": "Farm-3: Beds 1 & 2 (Maturing Spice)", "area": "0.020 Acre", "crop": "Maturing Turmeric & Ginger Rhizomes", "color": "#8e44ad", "center": [30.948665, 76.501764] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50177072579744, 30.94861677900543], [76.50181785106258, 30.94864275946291], [76.50175053199814, 30.9487149311085], [76.50171350482793, 30.94868822873285], [76.50175473803108, 30.94865430790044], [76.50174632243497, 30.94863482204951], [76.50177072579744, 30.94861677900543]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "Beds 1 & 2 (Maturing Spice)", "farmKey": "Farm-3", "name": "Farm-3: Beds 3 & 4 (Rabi Greens Turnaround)", "area": "0.014 Acre", "crop": "Palak, Kasuri Methi & Coriander", "color": "#9b59b6" },
+      "properties": { "plotKey": "Beds 1 & 2 (Maturing Spice)", "farmKey": "Farm-3", "name": "Farm-3: Beds 3 & 4 (Rabi Greens Turnaround)", "area": "0.014 Acre", "crop": "Palak, Kasuri Methi & Coriander", "color": "#9b59b6", "center": [30.948707, 76.501646] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50167563576267, 30.94864456632644], [76.50171771244639, 30.94869075462211], [76.50162009899499, 30.9487701438137], [76.50157381472887, 30.94872251213114], [76.50167563576267, 30.94864456632644]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-22 (Methi Nursery)", "farmKey": "Farm-2", "name": "Farm-2: West Nursery Strip", "area": "0.012 Acre", "crop": "High-Density Kasuri Methi", "color": "#d35400" },
+      "properties": { "plotKey": "VegPlot-22 (Methi Nursery)", "farmKey": "Farm-2", "name": "Farm-2: West Nursery Strip", "area": "0.012 Acre", "crop": "High-Density Kasuri Methi", "color": "#d35400", "center": [30.948624, 76.501545] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50156707958672, 30.94858971872566], [76.50158811787351, 30.9486120911847], [76.5015233225764, 30.94865828133889], [76.50150228430067, 30.94863590886013], [76.50156707958672, 30.94858971872566]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "VegPlot-23 (Alliums/Banana)", "farmKey": "Farm-2", "name": "Farm-2: Banana & Compost Bay", "area": "0.024 Acre", "crop": "Banana Cluster + Coriander / Garlic Border", "color": "#e67e22" },
+      "properties": { "plotKey": "VegPlot-23 (Alliums/Banana)", "farmKey": "Farm-2", "name": "Farm-2: Banana & Compost Bay", "area": "0.024 Acre", "crop": "Banana Cluster + Coriander / Garlic Border", "color": "#e67e22", "center": [30.948659, 76.501573] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50158980099104, 30.94861642138146], [76.50162598684022, 30.94865394935648], [76.50155698398537, 30.94870013960081], [76.50152079816264, 30.94866333330037], [76.50158980099104, 30.94861642138146]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "Alley 1 (White Radish)", "farmKey": "Farm-4", "name": "Northwest Outlier Parcel A", "area": "0.045 Acre", "crop": "Peripheral Cover & Reserve", "color": "#34495e" },
+      "properties": { "plotKey": "Alley 1 (White Radish)", "farmKey": "Farm-4", "name": "Northwest Outlier Parcel A", "area": "0.045 Acre", "crop": "Peripheral Cover & Reserve", "color": "#34495e", "center": [30.949837, 76.501571] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50155204495822, 30.94974225518869], [76.50158523959558, 30.94974133629131], [76.50158952724777, 30.9499332682061], [76.50155633232693, 30.94992546292119], [76.50155204495822, 30.94974225518869]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "Alley 1 (White Radish)", "farmKey": "Farm-4", "name": "Northwest Outlier Parcel B", "area": "0.045 Acre", "crop": "Peripheral Cover & Reserve", "color": "#2c3e50" },
+      "properties": { "plotKey": "Alley 1 (White Radish)", "farmKey": "Farm-4", "name": "Northwest Outlier Parcel B", "area": "0.045 Acre", "crop": "Peripheral Cover & Reserve", "color": "#2c3e50", "center": [30.949833, 76.501604] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50158577499323, 30.94974133628214], [76.50162111122268, 30.94974041733967], [76.50162272182804, 30.94992638011451], [76.50159059783262, 30.94992408482138], [76.50158577499323, 30.94974133628214]]] }
     },
     {
       "type": "Feature",
-      "properties": { "plotKey": "Alley 1 (White Radish)", "farmKey": "Farm-4", "name": "Farm-4: Standalone Fruit-Alley Corridor", "area": "0.250 Acre (50ft x 420ft)", "crop": "4 Fruit Lanes, 7 Raised Beds, Miyawaki Shield", "color": "#2980b9" },
+      "properties": { "plotKey": "Alley 1 (White Radish)", "farmKey": "Farm-4", "name": "Farm-4: Standalone Fruit-Alley Corridor", "area": "0.250 Acre (50ft x 420ft)", "crop": "4 Fruit Lanes, 7 Raised Beds, Miyawaki Shield", "color": "#2980b9", "center": [30.947896, 76.500046] },
       "geometry": { "type": "Polygon", "coordinates": [[[76.50048241452831, 30.94796243464948], [76.49961096063556, 30.94798737904692], [76.49961189833914, 30.94786107108461], [76.50048053695441, 30.94783129959662], [76.50048241452831, 30.94796243464948]]] }
     }
   ];
 
+  // Render Polygons with In-Map Inspection Popups
   function renderGeoData(geoData) {
     geojsonLayerGroup.clearLayers();
     const layer = L.geoJSON(geoData, {
@@ -517,20 +508,23 @@
       },
       onEachFeature: function(feature, layer) {
         const p = feature.properties;
-        layer.on('click', function() {
-          triggerPlotAction(p.plotKey, p.farmKey);
-        });
         
+        // Pure map click opens popup only (no forced tab redirect)
         layer.bindPopup(`
-          <div style="font-family:sans-serif; min-width:210px; line-height:1.5;">
+          <div style="font-family:sans-serif; min-width:220px; line-height:1.4;">
             <strong style="color:${p.color}; font-size:0.95rem;">${p.name}</strong><br>
-            <span style="font-size:0.75rem; color:#777;">Holding: ${p.farmKey}</span>
-            <hr style="margin:5px 0; border:0; border-top:1px solid #ddd;">
+            <span style="font-size:0.75rem; color:#666;">Holding: ${p.farmKey}</span>
+            <hr style="margin:6px 0; border:0; border-top:1px solid #ddd;">
             <b>Gross Footprint:</b> ${p.area}<br>
-            <b>Target System:</b> ${p.crop}<br><br>
-            <button class="btn" style="padding:5px 8px; font-size:0.75rem; width:100%; justify-content:center; background:${p.color};" onclick="triggerPlotAction('${p.plotKey}', '${p.farmKey}')">
-              Filter Tasks & Log Entry &rarr;
-            </button>
+            <b>Standing System:</b> ${p.crop}<br><br>
+            <div style="display:flex; gap:6px;">
+              <button class="btn" style="padding:4px 8px; font-size:0.72rem; flex:1; justify-content:center;" onclick="filterTasksFromMap('${p.farmKey}', '${p.name}')">
+                View Tasks
+              </button>
+              <button class="btn btn-gold" style="padding:4px 8px; font-size:0.72rem; flex:1; justify-content:center;" onclick="openLogFormFromMap('${p.plotKey}', '${p.farmKey}')">
+                + Log Work
+              </button>
+            </div>
           </div>
         `);
       }
@@ -545,8 +539,20 @@
     renderGeoData(completeKmlParcels);
   }
 
-  function triggerPlotAction(plotKey, farmKey) {
+  function highlightPlot(plotKey) {
+    completeKmlParcels.forEach(f => {
+      if (f.properties.plotKey === plotKey && f.properties.center) {
+        map.setView(f.properties.center, 20);
+      }
+    });
+  }
+
+  function filterTasksFromMap(farmKey, plotName) {
     filterTasksByFarm(farmKey);
+    switchTab('tab-schedule');
+  }
+
+  function openLogFormFromMap(plotKey, farmKey) {
     const farmSelect = document.getElementById('form-farm');
     if (farmSelect) {
       farmSelect.value = farmKey;
@@ -558,13 +564,257 @@
     window.scrollTo({ top: 180, behavior: 'smooth' });
   }
 
-  function resetFilterAndShowAll() {
-    renderTasks('ALL');
-    document.getElementById('schedule-title-text').textContent = "Critical Path Execution Matrix (All Holdings)";
+  // =========================================================================
+  // CLICKABLE TASKS MAP LAYER (Toggles On/Off)
+  // =========================================================================
+  const plotTaskAssociations = {
+    "VegPlot-01 (Carrots)": ["T-01", "T-06", "T-07"],
+    "VegPlot-03 (Early Potato)": ["T-01", "T-08", "T-09"],
+    "VegPlot-05 (Cole Crops)": ["T-12"],
+    "VegPlot-08 (Turmeric/Cane)": ["T-13", "T-14"],
+    "Wheat/VegPlot-09 (1-Ac Cereal)": ["T-10", "T-11"],
+    "VegPlot-10 (Broccoli)": ["T-01", "T-05"],
+    "VegPlot-11 (Garlic/Peas)": ["T-01", "T-05"],
+    "VegPlot-13 (Driveway & Wings)": ["T-02", "T-05"],
+    "Alley 1 (White Radish)": ["T-03", "T-07"]
+  };
+
+  function renderTasksMapLayer() {
+    tasksLayerGroup.clearLayers();
+    
+    completeKmlParcels.forEach(parcel => {
+      const p = parcel.properties;
+      const associatedTaskCodes = plotTaskAssociations[p.plotKey];
+      
+      if (associatedTaskCodes && p.center) {
+        associatedTaskCodes.forEach((tCode, idx) => {
+          const taskObj = (dynamicTasks.length > 0 ? dynamicTasks : fallbackTaskRegistry).find(t => (t.Task_ID || t.code) === tCode);
+          if (taskObj) {
+            const status = taskObj.Current_Status || taskObj.status;
+            const isDone = (status === "DONE");
+            const offsetLat = p.center[0] + (idx * 0.00012) - 0.00006;
+            const offsetLng = p.center[1] + (idx * 0.00012) - 0.00006;
+            
+            const taskIcon = L.divIcon({
+              html: `<div style="background:${isDone ? '#27ae60' : '#c0392b'}; color:#fff; border:1px solid #fff; border-radius:4px; padding:2px 5px; font-size:10px; font-weight:800; box-shadow:0 1px 4px rgba(0,0,0,0.5); white-space:nowrap;">${tCode}</div>`,
+              className: '',
+              iconSize: [36, 18],
+              iconAnchor: [18, 9]
+            });
+
+            const marker = L.marker([offsetLat, offsetLng], { icon: taskIcon });
+            marker.bindPopup(`
+              <div style="font-family:sans-serif; width:220px; line-height:1.4;">
+                <strong style="color:var(--brand-green); font-size:0.95rem;">${tCode}: ${taskObj.Agronomic_Description || taskObj.desc}</strong><br>
+                <span style="font-size:0.75rem; color:#666;">Target: ${p.name}</span><hr style="margin:6px 0; border:0; border-top:1px solid #eee;">
+                <b>Window:</b> ${taskObj.Planned_Start ? (taskObj.Planned_Start.toString().substring(0,10) + ' to ' + taskObj.Planned_End.toString().substring(0,10)) : taskObj.dates}<br>
+                <b>Assignee:</b> ${taskObj.Assigned_Lead || taskObj.lead}<br>
+                <b>Status:</b> <span style="font-weight:700; color:${isDone ? 'var(--success)' : 'var(--critical)'}">${status}</span><br><br>
+                <button class="btn" style="padding:4px 8px; font-size:0.75rem; width:100%; justify-content:center; background:${isDone ? '#7f8c8d' : '#27ae60'};" onclick="quickUpdateTaskStatus('${tCode}', '${isDone ? 'IN PROGRESS' : 'DONE'}')">
+                  ${isDone ? 'Mark as In Progress' : 'Mark Task as DONE ✓'}
+                </button>
+              </div>
+            `);
+            tasksLayerGroup.addLayer(marker);
+          }
+        });
+      }
+    });
+  }
+
+  function toggleTasksOverlay() {
+    const isChecked = document.getElementById('toggle-tasks-layer').checked;
+    if (isChecked) map.addLayer(tasksLayerGroup);
+    else map.removeLayer(tasksLayerGroup);
+  }
+
+  function togglePhotosOverlay() {
+    const isChecked = document.getElementById('toggle-photos-layer').checked;
+    if (isChecked) map.addLayer(photoLayerGroup);
+    else map.removeLayer(photoLayerGroup);
+  }
+
+  function quickUpdateTaskStatus(tCode, newStatus) {
+    fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "UPDATE_TASK_STATUS", taskId: tCode, status: newStatus })
+    }).then(() => {
+      alert(`Task ${tCode} updated to ${newStatus} in Google Sheets!`);
+      syncWithGoogleSheet();
+    });
   }
 
   // =========================================================================
-  // DYNAMIC SPREADSHEET SYNC ENGINE (Pull Tasks, Wage Rates, Stakeholders)
+  // PERSISTENT CLOUD & LOCAL PHOTO ENGINE (Photos Survive Refresh)
+  // =========================================================================
+  let loadedPhotos = [];
+
+  function loadPersistentPhotos(cloudPhotos = []) {
+    photoLayerGroup.clearLayers();
+    
+    // Load local storage cache
+    let localPhotos = [];
+    try {
+      localPhotos = JSON.parse(localStorage.getItem('jagdish_cached_photos') || '[]');
+    } catch(e) {}
+    
+    // Merge cloud photos and local cache without duplicates
+    const combined = [...cloudPhotos];
+    localPhotos.forEach(lp => {
+      if (!combined.some(cp => cp.id === lp.id)) combined.push(lp);
+    });
+    
+    loadedPhotos = combined;
+    document.getElementById('photo-load-count').textContent = `(${loadedPhotos.length} photos persistent)`;
+    renderPhotoMarkers(loadedPhotos);
+  }
+
+  function renderPhotoMarkers(photosToRender) {
+    photoLayerGroup.clearLayers();
+    
+    const cameraIcon = L.divIcon({
+      html: `<div style="background:#12432a; border:2px solid #e69a0b; color:#fff; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.4); font-size:12px;">📷</div>`,
+      className: '',
+      iconSize: [26, 26],
+      iconAnchor: [13, 13]
+    });
+
+    photosToRender.forEach(p => {
+      const marker = L.marker([p.lat, p.lng || p.lon], { icon: cameraIcon });
+      const imgSrc = p.thumbUrl || p.url || p.blobUrl;
+      
+      marker.bindPopup(`
+        <div style="font-family:sans-serif; width:220px; line-height:1.4;">
+          <strong style="color:var(--brand-green); font-size:0.90rem;">${p.plotId || p.name || 'Field Photo'}</strong><br>
+          <span style="font-size:0.75rem; color:#666;">Recorded: ${p.timestamp ? p.timestamp.toString().substring(0,10) : (p.date || 'Active')}</span>
+          <hr style="margin:5px 0; border:0; border-top:1px solid #ddd;">
+          <a href="${p.url || p.blobUrl}" target="_blank">
+            <img src="${imgSrc}" style="width:100%; height:130px; object-fit:cover; border-radius:4px; margin-bottom:4px;" onerror="this.src='https://placehold.co/220x130/12432a/ffffff?text=Drive+Photo'">
+          </a>
+          <div style="font-size:0.70rem; color:#888;">GPS: ${p.lat.toFixed(5)}, ${(p.lng || p.lon).toFixed(5)}</div>
+          ${p.notes ? `<div style="font-size:0.75rem; margin-top:3px; color:#444;">${p.notes}</div>` : ''}
+        </div>
+      `);
+      photoLayerGroup.addLayer(marker);
+    });
+  }
+
+  // Handle client-side selection of photos
+  let pendingManualPhoto = null;
+  document.getElementById('photo-file-input').addEventListener('change', async function(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    
+    let added = 0;
+    for (const file of files) {
+      try {
+        const tags = await ExifReader.load(file, { expanded: true });
+        if (tags.gps && tags.gps.Latitude && tags.gps.Longitude) {
+          const lat = tags.gps.Latitude;
+          const lng = tags.gps.Longitude;
+          
+          let dateStr = new Date().toISOString().substring(0,10);
+          if (tags.exif && tags.exif.DateTimeOriginal) {
+            const raw = tags.exif.DateTimeOriginal.description.split(" ")[0].split(":");
+            dateStr = `${raw[0]}-${raw[1]}-${raw[2]}`;
+          }
+
+          const photoObj = {
+            id: 'photo-' + Date.now() + '-' + Math.random(),
+            lat: lat,
+            lng: lng,
+            name: file.name,
+            date: dateStr,
+            year: dateStr.substring(0,4),
+            month: dateStr.substring(5,7),
+            blobUrl: URL.createObjectURL(file)
+          };
+          
+          loadedPhotos.push(photoObj);
+          added++;
+        } else {
+          pendingManualPhoto = file;
+          document.getElementById('manual-pin-prompt').style.display = 'block';
+          alert(`Image "${file.name}" has no GPS. Tap the exact bed on the map to anchor its position!`);
+        }
+      } catch(err) {
+        console.warn("EXIF error: ", err);
+      }
+    }
+    
+    // Save to local cache so photos survive browser refresh
+    savePhotosToLocalCache();
+    document.getElementById('photo-load-count').textContent = `(${loadedPhotos.length} photos on map)`;
+    applyPhotoFilter();
+    if (added > 0) alert(`Added ${added} photos! Markers remain visible across page refreshes.`);
+  });
+
+  map.on('click', function(e) {
+    if (pendingManualPhoto) {
+      const dateStr = new Date().toISOString().substring(0,10);
+      const photoObj = {
+        id: 'photo-' + Date.now(),
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+        name: pendingManualPhoto.name + " (Manual Pin)",
+        date: dateStr,
+        year: dateStr.substring(0,4),
+        month: dateStr.substring(5,7),
+        blobUrl: URL.createObjectURL(pendingManualPhoto)
+      };
+
+      loadedPhotos.push(photoObj);
+      savePhotosToLocalCache();
+      pendingManualPhoto = null;
+      document.getElementById('manual-pin-prompt').style.display = 'none';
+      document.getElementById('photo-load-count').textContent = `(${loadedPhotos.length} photos on map)`;
+      applyPhotoFilter();
+      alert("Photo location anchored and saved!");
+    }
+  });
+
+  function savePhotosToLocalCache() {
+    try {
+      const cacheable = loadedPhotos.map(p => ({
+        id: p.id, lat: p.lat, lng: p.lng || p.lon, name: p.name,
+        date: p.date, year: p.year, month: p.month, plotId: p.plotId,
+        url: p.url, thumbUrl: p.thumbUrl
+      }));
+      localStorage.setItem('jagdish_cached_photos', JSON.stringify(cacheable));
+    } catch(e) {}
+  }
+
+  function applyPhotoFilter() {
+    const yr = document.getElementById('filter-year').value;
+    const mo = document.getElementById('filter-month').value;
+    
+    const filtered = loadedPhotos.filter(p => {
+      const matchYr = (yr === 'ALL' || (p.year && p.year === yr) || (p.timestamp && p.timestamp.toString().includes(yr)));
+      const matchMo = (mo === 'ALL' || (p.month && p.month === mo) || (p.timestamp && p.timestamp.toString().substring(5,7) === mo));
+      return matchYr && matchMo;
+    });
+
+    renderPhotoMarkers(filtered);
+  }
+
+  function applyPhotoExactDate() {
+    const picked = document.getElementById('filter-exact-date').value;
+    if (!picked) return;
+    const filtered = loadedPhotos.filter(p => (p.date === picked) || (p.timestamp && p.timestamp.toString().substring(0,10) === picked));
+    renderPhotoMarkers(filtered);
+  }
+
+  function clearDateFilter() {
+    document.getElementById('filter-year').value = 'ALL';
+    document.getElementById('filter-month').value = 'ALL';
+    document.getElementById('filter-exact-date').value = '';
+    renderPhotoMarkers(loadedPhotos);
+  }
+
+  // =========================================================================
+  // DYNAMIC SPREADSHEET SYNC ENGINE
   // =========================================================================
   let dynamicTasks = [];
   let dynamicRates = [];
@@ -584,21 +834,23 @@
 
           populateDynamicDropdowns();
           renderTasks('ALL');
+          renderTasksMapLayer();
+          loadPersistentPhotos(data.photos || []);
 
           document.getElementById('sync-indicator').textContent = "Sheet Synced ✓";
           document.getElementById('sync-indicator').style.background = "var(--brand-green-light)";
         }
       })
       .catch(err => {
-        console.warn("Using offline task/rate baseline: ", err);
+        console.warn("Using offline fallback: ", err);
         document.getElementById('sync-indicator').textContent = "Local Mode";
         document.getElementById('sync-indicator').style.background = "var(--brand-gold)";
         loadFallbackTaskAndRates();
+        loadPersistentPhotos([]);
       });
   }
 
   function populateDynamicDropdowns() {
-    // 1. Tasks Dropdown
     const taskSelect = document.getElementById('form-task');
     taskSelect.innerHTML = '';
     dynamicTasks.forEach(t => {
@@ -608,7 +860,6 @@
       taskSelect.appendChild(opt);
     });
 
-    // 2. Wage Rates Dropdown
     const wageSelect = document.getElementById('wage-category');
     wageSelect.innerHTML = '';
     dynamicRates.forEach(r => {
@@ -619,7 +870,6 @@
       wageSelect.appendChild(opt);
     });
 
-    // 3. Stakeholders Dropdown
     const stkSelect = document.getElementById('form-stakeholder');
     stkSelect.innerHTML = '';
     dynamicStakeholders.forEach(s => {
@@ -635,13 +885,12 @@
   function renderTasks(filterFarmKey = 'ALL') {
     const tbody = document.getElementById('task-tbody');
     tbody.innerHTML = '';
-    
     const taskList = dynamicTasks.length > 0 ? dynamicTasks : fallbackTaskRegistry;
 
     const filteredList = taskList.filter(t => {
       if (filterFarmKey === 'ALL') return true;
-      const farmVal = t.Holding_ID || t.farm;
-      return farmVal.includes(filterFarmKey) || farmVal === "All Farms";
+      const f = t.Holding_ID || t.farm;
+      return f.includes(filterFarmKey) || f === "All Farms";
     });
 
     filteredList.forEach(t => {
@@ -654,7 +903,7 @@
         <td><strong>${t.Task_ID || t.code}</strong></td>
         <td>${t.Holding_ID || t.farm}</td>
         <td>${t.Agronomic_Description || t.desc}</td>
-        <td>${t.Planned_Start ? (t.Planned_Start.toString().substring(0,10) + ' - ' + t.Planned_End.toString().substring(0,10)) : t.dates}</td>
+        <td>${t.Planned_Start ? (t.Planned_Start.toString().substring(0,10) + ' to ' + t.Planned_End.toString().substring(0,10)) : t.dates}</td>
         <td>${isCpm ? '<span class="cpm-badge">CRITICAL PATH</span>' : '<span style="color:#aaa; font-size:0.72rem;">Parallel</span>'}</td>
         <td>${t.Assigned_Lead || t.lead}</td>
         <td><span class="status-tag ${sClass}">${status}</span></td>
@@ -668,7 +917,6 @@
     document.getElementById('schedule-title-text').textContent = `Filtered Task Schedule: ${farmKey}`;
   }
 
-  // Fallbacks if Google Sheet endpoint is momentarily unreachable
   const fallbackTaskRegistry = [
     { code: "T-01", farm: "Farm-1, 4", desc: "Non-Inversion Aeration & Gypsum/Murgi Base Dressing", dates: "Sep 24 - 25", cpm: true, lead: "Crew Alpha", status: "DONE" },
     { code: "T-02", farm: "Farm-1", desc: "Trench 14ft Conduit Sleeve across VegPlot-13", dates: "Sep 25", cpm: true, lead: "Crew Alpha", status: "DONE" },
@@ -713,11 +961,9 @@
       <option value="Crew Beta Lead">Crew Beta Lead</option>
       <option value="Irrigation Operator">Irrigation Operator</option>
     `;
-
     calcDynamicLabor();
   }
 
-  // Sub-Plot Mapping
   const plotMapping = {
     "Farm-1": [
       "VegPlot-01 (Carrots)", "VegPlot-03 (Early Potato)", "VegPlot-05 (Cole Crops)", 
@@ -742,7 +988,6 @@
   }
   populatePlotDropdown();
 
-  // Dynamic Labor Calculation
   let currentLaborPayout = 0;
   function calcDynamicLabor() {
     const select = document.getElementById('wage-category');
@@ -762,162 +1007,7 @@
     document.getElementById('preview-total').textContent = '₹' + tot.toLocaleString('en-IN');
   }
 
-  // =========================================================================
-  // UNIVERSAL MOBILE IMAGE PROCESSOR & EXIF EXTRACTION (All Phones / Sizes)
-  // =========================================================================
-  let loadedPhotos = [];
-  let pendingManualPhoto = null;
-
-  // Handles Batch Photo Upload onto Map (Supports iPhone HEIC/JPEG and Android)
-  document.getElementById('photo-file-input').addEventListener('change', async function(e) {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    
-    let loadedCount = 0;
-    
-    for (const file of files) {
-      try {
-        const tags = await ExifReader.load(file, { expanded: true });
-        
-        if (tags.gps && tags.gps.Latitude && tags.gps.Longitude) {
-          const lat = tags.gps.Latitude;
-          const lon = tags.gps.Longitude;
-          
-          let dateStr = "";
-          let year = "", month = "", day = "";
-          
-          if (tags.exif && tags.exif.DateTimeOriginal) {
-            const rawDate = tags.exif.DateTimeOriginal.description;
-            const parts = rawDate.split(" ")[0].split(":");
-            year = parts[0];
-            month = parts[1];
-            day = parts[2];
-            dateStr = `${year}-${month}-${day}`;
-          } else {
-            const d = new Date(file.lastModified);
-            year = String(d.getFullYear());
-            month = String(d.getMonth() + 1).padStart(2, '0');
-            day = String(d.getDate()).padStart(2, '0');
-            dateStr = `${year}-${month}-${day}`;
-          }
-
-          const photoObj = {
-            id: 'photo-' + Date.now() + '-' + Math.random(),
-            lat: lat,
-            lon: lon,
-            name: file.name,
-            date: dateStr,
-            year: year,
-            month: month,
-            day: day,
-            blobUrl: URL.createObjectURL(file)
-          };
-          
-          loadedPhotos.push(photoObj);
-          loadedCount++;
-        } else {
-          // Fallback: Geotag missing, offer interactive placement
-          pendingManualPhoto = file;
-          document.getElementById('manual-pin-prompt').style.display = 'block';
-          alert(`Image "${file.name}" has no embedded GPS. Tap anywhere on the map to anchor its location!`);
-        }
-      } catch (err) {
-        console.warn("Could not parse EXIF metadata: " + file.name, err);
-      }
-    }
-
-    document.getElementById('photo-load-count').textContent = `(${loadedPhotos.length} photos on map)`;
-    applyPhotoFilter();
-    if (loadedCount > 0) {
-      alert(`Successfully mapped ${loadedCount} geotagged photos!`);
-    }
-  });
-
-  // Map Click Listener for Manual Photo Pin Placement
-  map.on('click', function(e) {
-    if (pendingManualPhoto) {
-      const d = new Date(pendingManualPhoto.lastModified);
-      const year = String(d.getFullYear());
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
-
-      const photoObj = {
-        id: 'photo-' + Date.now(),
-        lat: e.latlng.lat,
-        lon: e.latlng.lng,
-        name: pendingManualPhoto.name + " (Manual Pin)",
-        date: dateStr,
-        year: year,
-        month: month,
-        day: day,
-        blobUrl: URL.createObjectURL(pendingManualPhoto)
-      };
-
-      loadedPhotos.push(photoObj);
-      pendingManualPhoto = null;
-      document.getElementById('manual-pin-prompt').style.display = 'none';
-      document.getElementById('photo-load-count').textContent = `(${loadedPhotos.length} photos on map)`;
-      applyPhotoFilter();
-      alert("Photo location anchored to map!");
-    }
-  });
-
-  function renderPhotoMarkers(photosToRender) {
-    photoLayerGroup.clearLayers();
-    
-    const cameraIcon = L.divIcon({
-      html: `<div style="background:#12432a; border:2px solid #e69a0b; color:#fff; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.4); font-size:13px;">📷</div>`,
-      className: '',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
-    });
-
-    photosToRender.forEach(p => {
-      const marker = L.marker([p.lat, p.lon], { icon: cameraIcon });
-      marker.bindPopup(`
-        <div style="font-family:sans-serif; width:220px; line-height:1.4;">
-          <strong style="color:#12432a; font-size:0.9rem;">${p.name}</strong><br>
-          <span style="font-size:0.75rem; color:#666;">Date: ${p.date}</span>
-          <hr style="margin:5px 0; border:0; border-top:1px solid #ddd;">
-          <img src="${p.blobUrl}" style="width:100%; height:130px; object-fit:cover; border-radius:4px; margin-bottom:6px;">
-          <div style="font-size:0.70rem; color:#888;">GPS: ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}</div>
-        </div>
-      `);
-      photoLayerGroup.addLayer(marker);
-    });
-  }
-
-  function applyPhotoFilter() {
-    const yr = document.getElementById('filter-year').value;
-    const mo = document.getElementById('filter-month').value;
-    
-    const filtered = loadedPhotos.filter(p => {
-      const matchYr = (yr === 'ALL' || p.year === yr);
-      const matchMo = (mo === 'ALL' || p.month === mo);
-      return matchYr && matchMo;
-    });
-
-    renderPhotoMarkers(filtered);
-  }
-
-  function applyPhotoExactDate() {
-    const picked = document.getElementById('filter-exact-date').value;
-    if (!picked) return;
-    const filtered = loadedPhotos.filter(p => p.date === picked);
-    renderPhotoMarkers(filtered);
-  }
-
-  function clearDateFilter() {
-    document.getElementById('filter-year').value = 'ALL';
-    document.getElementById('filter-month').value = 'ALL';
-    document.getElementById('filter-exact-date').value = '';
-    renderPhotoMarkers(loadedPhotos);
-  }
-
-  // =========================================================================
-  // CLIENT-SIDE IMAGE COMPRESSION (Handles Any Size on Android/iPhone)
-  // =========================================================================
+  // Universal Single Image Processor
   let compressedBase64 = null;
   let compressedFileName = null;
   let compressedMimeType = null;
@@ -927,9 +1017,8 @@
     if (!file) return;
 
     const statusEl = document.getElementById('file-compression-status');
-    statusEl.textContent = "Extracting GPS & optimizing image size...";
+    statusEl.textContent = "Processing image & checking GPS...";
 
-    // 1. Extract GPS coordinates via ExifReader
     try {
       const tags = await ExifReader.load(file, { expanded: true });
       if (tags.gps && tags.gps.Latitude && tags.gps.Longitude) {
@@ -939,12 +1028,10 @@
       } else {
         document.getElementById('form-lat').value = "";
         document.getElementById('form-lng').value = "";
+        statusEl.textContent = "No GPS in image (saving as general attachment). Optimizing...";
       }
-    } catch(err) {
-      console.warn("EXIF read skipped: ", err);
-    }
+    } catch(err) {}
 
-    // 2. Client-Side Image Downscale (Converts 20MB phone photo to ~300KB Full HD)
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -953,7 +1040,6 @@
           const maxDim = 1600;
           let width = img.width;
           let height = img.height;
-
           if (width > height && width > maxDim) {
             height = Math.round((height * maxDim) / width);
             width = maxDim;
@@ -961,24 +1047,21 @@
             width = Math.round((width * maxDim) / height);
             height = maxDim;
           }
-
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Compress to JPEG 82% quality
           compressedBase64 = canvas.toDataURL('image/jpeg', 0.82);
           compressedFileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
           compressedMimeType = "image/jpeg";
-          statusEl.textContent = `Optimized for fast upload (${Math.round(compressedBase64.length/1024)} KB)`;
+          statusEl.textContent = `Ready for submission (${Math.round(compressedBase64.length/1024)} KB)`;
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     } else {
-      // PDF or documents
       const reader = new FileReader();
       reader.onload = function(e) {
         compressedBase64 = e.target.result;
@@ -990,9 +1073,6 @@
     }
   }
 
-  // =========================================================================
-  // SUBMISSION TO APPS SCRIPT
-  // =========================================================================
   function handleFormSubmit(e) {
     e.preventDefault();
     const statusBox = document.getElementById('preview-status');
@@ -1029,7 +1109,7 @@
       statusBox.style.color = 'var(--success)';
       alert('Activity successfully logged into Google Sheets & Drive!');
       document.getElementById('entry-form').reset();
-      document.getElementById('file-compression-status').textContent = "Ready for any image size.";
+      document.getElementById('file-compression-status').textContent = "Ready for any phone photo.";
       compressedBase64 = null;
       calcDynamicLabor();
       syncWithGoogleSheet();
@@ -1040,7 +1120,6 @@
     });
   }
 
-  // Initial Sync on Page Load
   window.addEventListener('DOMContentLoaded', () => {
     syncWithGoogleSheet();
   });
